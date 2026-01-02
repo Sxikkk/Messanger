@@ -25,3 +25,4 @@ C:\Users\wallk\source\repos\Messanger\Domain\obj\Debug\net9.0\refint\Domain.dll
 C:\Users\wallk\source\repos\Messanger\Domain\obj\Debug\net9.0\Domain.pdb
 C:\Users\wallk\source\repos\Messanger\Domain\obj\Debug\net9.0\Domain.genruntimeconfig.cache
 C:\Users\wallk\source\repos\Messanger\Domain\obj\Debug\net9.0\ref\Domain.dll
+C:\Users\wallk\source\repos\Messanger\Domain\obj\Debug\net9.0\Domain.sourcelink.json

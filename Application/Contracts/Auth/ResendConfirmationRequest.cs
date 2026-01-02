@@ -1,3 +1,3 @@
 ﻿namespace Application.Contracts.Auth;
 
-public record ResendConfirmationRequest(string Email);
+public record ResendConfirmationRequest(string Email);    

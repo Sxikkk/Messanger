@@ -22,7 +22,7 @@ public class EmailService : IEmailService
         _smtpPass = config["Email:SmtpPass"] ?? string.Empty;
     }
 
-    public async Task SendEmailAsync(string toEmail, string subject, string body)
+    public async Task SendEmailAsync(string toEmail, string subject, string body, CancellationToken cancellationToken)
     {
         var email = new MimeMessage();
         email.From.Add(MailboxAddress.Parse(_fromEmail));
@@ -31,9 +31,9 @@ public class EmailService : IEmailService
         email.Body = new TextPart("html") { Text = body };
 
         using var client = new SmtpClient();
-        await client.ConnectAsync(_smtpHost, _smtpPort, SecureSocketOptions.StartTls);
-        await client.AuthenticateAsync(_smtpUser, _smtpPass);
-        await client.SendAsync(email);
-        await client.DisconnectAsync(true);
+        await client.ConnectAsync(_smtpHost, _smtpPort, SecureSocketOptions.StartTls, cancellationToken);
+        await client.AuthenticateAsync(_smtpUser, _smtpPass, cancellationToken);
+        await client.SendAsync(email, cancellationToken);
+        await client.DisconnectAsync(true, cancellationToken);
     }
 }

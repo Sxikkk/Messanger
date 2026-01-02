@@ -4,11 +4,12 @@ namespace Domain.Interfaces;
 
 public interface IUserRepository
 {
-    Task<IEnumerable<User>> GetAllUsersAsync();
-    Task<User?> GetUserByIdAsync(Guid userId);
-    Task<User?> GetUserByEmailAsync(string email);
-    Task<User?> GetUserByLoginAsync(string login);
-    Task<User?> GetUserByEmailOrLoginAsync(string emailOrLogin);
-    Task AddUserAsync(User user);
-    Task UpdateUserAsync(User user);
+    Task<IEnumerable<User>> GetAllUsersAsync(CancellationToken cancellationToken);
+    Task<User?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken);
+    Task<User?> GetUserByEmailAsync(string email, CancellationToken cancellationToken);
+    Task<User?> GetUserByLoginAsync(string login, CancellationToken cancellationToken);
+    Task<User?> GetUserByEmailOrLoginAsync(string emailOrLogin, CancellationToken cancellationToken);
+    Task<User?> GetUserByUsernameAsync(string username, CancellationToken cancellationToken);
+    Task AddUserAsync(User user, CancellationToken cancellationToken);
+    Task UpdateUserAsync(User user, CancellationToken cancellationToken);
 }

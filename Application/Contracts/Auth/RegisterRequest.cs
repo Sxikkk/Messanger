@@ -10,5 +10,6 @@ public sealed record RegisterRequest
     public string Name { get; init; }
     public string Login { get; init; }
     public string? Surname { get; init; }
+    public string? Username { get; init; }
     public bool LoginAfter { get; set; } = true;
 };

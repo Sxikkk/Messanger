@@ -30,20 +30,21 @@ public class AuthService : IAuthService
         _emailService = emailService;
     }
 
-    public async Task<TokenResponse?> CreateUserAsync(RegisterRequest request)
+    public async Task<TokenResponse?> CreateUserAsync(RegisterRequest request, CancellationToken cancellationToken)
     {
         var hashedPassword = _passwordHasher.HashPassword(request.Password);
         var refreshToken = _jwtService.GenerateRefreshToken();
         var user = new User(request.Email, hashedPassword, request.Login, _tokenHasher.HashToken(refreshToken),
             request.Name,
+            request.Username,
             request.Surname);
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Name, user.Name),
             new Claim("Login", user.Login),
+            new Claim("Username", user.Username),
         };
 
         var accessToken = _jwtService.GenerateAccessToken(claims);
@@ -55,7 +56,7 @@ public class AuthService : IAuthService
             IsEmailConfirmed = false
         };
 
-        await _userRepository.AddUserAsync(user);
+        await _userRepository.AddUserAsync(user, cancellationToken);
 
 
         var confirmationLink =
@@ -64,7 +65,7 @@ public class AuthService : IAuthService
                       <p>Чтобы завершить регистрацию, перейдите по ссылке:</p>
                       <a href='{confirmationLink}'>Подтвердить email</a>";
 
-        await _emailService.SendEmailAsync(request.Email, "Подтверждение регистрации", htmlBody);
+        await _emailService.SendEmailAsync(request.Email, "Подтверждение регистрации", htmlBody, cancellationToken);
 
         return request.LoginAfter
             ? new TokenResponse
@@ -75,9 +76,9 @@ public class AuthService : IAuthService
             : null;
     }
 
-    public async Task<TokenResponse?> LoginUser(LoginRequest request)
+    public async Task<TokenResponse?> LoginUser(LoginRequest request, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetUserByEmailOrLoginAsync(request.LoginOrEmail);
+        var user = await _userRepository.GetUserByEmailOrLoginAsync(request.LoginOrEmail, cancellationToken);
         if (user is null) throw new InvalidCredentialsException(null);
         if (!_passwordHasher.VerifyHashedPassword(user.HashedPassword, request.Password))
             throw new InvalidCredentialsException(null);
@@ -94,10 +95,7 @@ public class AuthService : IAuthService
         var refreshToken = _jwtService.GenerateRefreshToken();
         user.RefreshToken = _tokenHasher.HashToken(refreshToken);
 
-        if (!user.IsEmailConfirmed)
-            throw new InvalidCredentialsException("Please confirm your email before logging in.");
-
-        await _userRepository.UpdateUserAsync(user);
+        await _userRepository.UpdateUserAsync(user, cancellationToken);
         return new TokenResponse
         {
             AccessToken = accessToken,
@@ -105,9 +103,9 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<TokenResponse?> RefreshTokenAsync(RefreshRequest request)
+    public async Task<TokenResponse?> RefreshTokenAsync(RefreshRequest request, string login, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetUserByIdAsync(request.UserId);
+        var user = await _userRepository.GetUserByLoginAsync(login, cancellationToken);
 
         if (user == null) return null;
 
@@ -115,7 +113,7 @@ public class AuthService : IAuthService
 
         var newRefreshToken = _jwtService.GenerateRefreshToken();
         user.RefreshToken = _tokenHasher.HashToken(newRefreshToken);
-        await _userRepository.UpdateUserAsync(user);
+        await _userRepository.UpdateUserAsync(user, cancellationToken);
 
         var accessToken = _jwtService.GenerateAccessToken(GetClaims(user));
 
@@ -126,12 +124,12 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<bool> ConfirmEmail(string token, string email)
+    public async Task<bool> ConfirmEmail(string token, string email, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(email))
             return false;
 
-        var user = await _userRepository.GetUserByEmailAsync(email);
+        var user = await _userRepository.GetUserByEmailAsync(email, cancellationToken);
         if (user == null)
             throw new NotFoundException();
 
@@ -145,13 +143,13 @@ public class AuthService : IAuthService
         user.IsEmailConfirmed = true;
         user.EmailConfirmationToken = null;
 
-        await _userRepository.UpdateUserAsync(user);
+        await _userRepository.UpdateUserAsync(user, cancellationToken);
         return true;
     }
 
-    public async Task ResendConfirmationEmailAsync(ResendConfirmationRequest request)
+    public async Task ResendConfirmationEmailAsync(string email, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetUserByEmailAsync(request.Email);
+        var user = await _userRepository.GetUserByEmailAsync(email, cancellationToken);
 
         if (user == null || user.IsEmailConfirmed)
             return;
@@ -162,7 +160,7 @@ public class AuthService : IAuthService
         if (hashedToken != null) user.EmailConfirmationToken = _tokenHasher.HashToken(hashedToken);
 
         var confirmationLink =
-            $"http://localhost:5136/api/auth/confirm-email?token={confirmationToken}&email={Uri.EscapeDataString(request.Email)}";
+            $"http://localhost:5136/api/auth/confirm-email?token={confirmationToken}&email={Uri.EscapeDataString(email)}";
 
         var htmlBody = $@"<h2>Подтверждение регистрации</h2>
                       <p>Вы запросили повторную отправку письма подтверждения.</p>
@@ -170,7 +168,7 @@ public class AuthService : IAuthService
                       <a href='{confirmationLink}'>Подтвердить email</a>
                       <p>Если вы не регистрировались — проигнорируйте это письмо.</p>";
 
-        await _emailService.SendEmailAsync(request.Email, "Повторное подтверждение email", htmlBody);
+        await _emailService.SendEmailAsync(email, "Повторное подтверждение email", htmlBody, cancellationToken);
     }
 
     private static IEnumerable<Claim> GetClaims(User user)

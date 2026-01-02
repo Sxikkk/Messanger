@@ -1,5 +1,7 @@
-﻿using Application.Contracts.Auth;
+﻿using System.Security.Claims;
+using Application.Contracts.Auth;
 using Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Messanger.Controllers;
@@ -16,11 +18,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest request)
+    public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest request,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var tokenResponse = await _authService.CreateUserAsync(request);
+            var tokenResponse = await _authService.CreateUserAsync(request, cancellationToken);
             return Ok(tokenResponse);
         }
         catch (Exception e)
@@ -31,11 +34,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request)
+    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var tokenResponse = await _authService.LoginUser(request);
+            var tokenResponse = await _authService.LoginUser(request, cancellationToken);
             return Ok(tokenResponse);
         }
         catch (Exception e)
@@ -44,15 +48,19 @@ public class AuthController : ControllerBase
             return BadRequest(e.Message);
         }
     }
-    
+
     [HttpPost("refresh")]
-    public async Task<IActionResult> RefreshAsync([FromBody] RefreshRequest request)
+    [Authorize]
+    public async Task<IActionResult> RefreshAsync([FromBody] RefreshRequest request,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var token = await _authService.RefreshTokenAsync(request);
+            var login = User.FindFirstValue("Login");
+            ArgumentNullException.ThrowIfNull(login);
+            var token = await _authService.RefreshTokenAsync(request, login, cancellationToken);
             if (token is null) return Unauthorized();
-            
+
             return Ok(token);
         }
         catch (Exception e)
@@ -61,29 +69,25 @@ public class AuthController : ControllerBase
             return BadRequest(e.Message);
         }
     }
-    
-    [HttpGet("confirm-email")]
-    public async Task<IActionResult> ConfirmEmail(string token, string email)
-    {
-        await _authService.ConfirmEmail(token, email);
-        return Ok("Email successfully confirmed! You can now log in.");
-    }
-    
+
     [HttpPost("resend-confirmation")]
-    public async Task<IActionResult> ResendConfirmationAsync([FromBody] ResendConfirmationRequest request)
+    [Authorize]
+    public async Task<IActionResult> ResendConfirmationAsync(CancellationToken cancellationToken = default)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
         try
         {
-            await _authService.ResendConfirmationEmailAsync(request);
-            return Ok(new { message = "Если email зарегистрирован и не подтверждён, письмо отправлено." });
+            var userEmail =  User.FindFirstValue(ClaimTypes.Email);
+            ArgumentNullException.ThrowIfNull(userEmail);
+            await _authService.ResendConfirmationEmailAsync(userEmail, cancellationToken);
+            return Ok();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            return StatusCode(500, new { message = "Произошла ошибка при отправке письма." });
+            return StatusCode(500, new { message = "Произошла ошибка при отправке письма" });
         }
     }
 }

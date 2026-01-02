@@ -42,3 +42,4 @@ C:\Users\wallk\source\repos\Messanger\Application\obj\Debug\net9.0\ref\Applicati
 C:\Users\wallk\source\repos\Messanger\Application\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
 C:\Users\wallk\source\repos\Messanger\Application\bin\Debug\net9.0\MailKit.dll
 C:\Users\wallk\source\repos\Messanger\Application\bin\Debug\net9.0\MimeKit.dll
+C:\Users\wallk\source\repos\Messanger\Application\obj\Debug\net9.0\Application.sourcelink.json

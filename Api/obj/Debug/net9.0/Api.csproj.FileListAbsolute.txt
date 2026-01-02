@@ -77,3 +77,4 @@ C:\Users\wallk\source\repos\Messanger\Api\obj\Debug\net9.0\ref\Api.dll
 C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\BouncyCastle.Cryptography.dll
 C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\MailKit.dll
 C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\MimeKit.dll
+C:\Users\wallk\source\repos\Messanger\Api\obj\Debug\net9.0\Api.sourcelink.json

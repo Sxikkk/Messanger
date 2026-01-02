@@ -3,5 +3,4 @@
 public sealed record RefreshRequest
 {
     public string RefreshToken { get; init; }
-    public Guid UserId { get; init; }
 };
