@@ -34,7 +34,7 @@ public sealed record UserRelation : TimeTracking
         if (RelationType != RelationTypeEnum.Friend || Status != RelationStatus.Pending)
             throw new InvalidOperationException("Relation cannot be accepted");
 
-        Status = RelationStatus.Confirmed;
+        Status = RelationStatus.Accepted;
     }
 
     public void Reject()

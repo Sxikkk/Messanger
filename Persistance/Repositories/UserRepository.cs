@@ -66,6 +66,21 @@ public class UserRepository : IUserRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<Guid> GetUserIdByUsernameAsync(string username, CancellationToken cancellationToken)
+    {
+        return await _dbContext.Users
+            .Where(u => u.Username == username)
+            .Select(u => u.Id)
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<Dictionary<Guid, string>> GetUsernamesByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct)
+    {
+        return await _dbContext.Users
+            .Where(u => ids.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.Username, ct);
+    }
+    
     public async Task<User?> GetUserByUsernameAsync(string username, CancellationToken cancellationToken)
     {
         return await _dbContext.Users

@@ -3,7 +3,7 @@ namespace Domain.ValueObjects;
 public enum RelationStatus
 {
     Pending,
-    Confirmed,
+    Accepted,
     Rejected,
     Null,
 }

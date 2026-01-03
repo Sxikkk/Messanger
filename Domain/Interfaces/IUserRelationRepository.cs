@@ -34,7 +34,13 @@ public interface IUserRelationRepository
 
     Task AddAsync(UserRelation relation, CancellationToken ct);
 
-    Task RemoveAsync(UserRelation relation, CancellationToken ct);
+    void RemoveAsync(UserRelation relation, CancellationToken ct);
+    Task RemoveRangeAsync(
+        Guid userId,
+        Guid targetUserId,
+        RelationTypeEnum relationType,
+        CancellationToken ct
+    );
 
     Task SaveChangesAsync(CancellationToken ct);
 }

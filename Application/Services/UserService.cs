@@ -1,5 +1,6 @@
 using Application.Contracts.User;
 using Application.Interfaces;
+using Domain.Entities;
 using Domain.Interfaces;
 
 namespace Application.Services;
@@ -34,6 +35,11 @@ public class UserService : IUserService
         return new UserProfileResponse(fullUserInfo);
     }
 
+    public async Task<User?> GetUserByUsername(string username, CancellationToken cancellationToken)
+    {
+        return await _userRepository.GetUserByUsernameAsync(username, cancellationToken);
+    }
+    
     public async Task UpdateUserSettings(UpdateUserSettingsRequest request, Guid userId,
         CancellationToken cancellationToken)
     {

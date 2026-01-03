@@ -2,56 +2,49 @@ namespace Application.Interfaces;
 
 public interface IUserRelationService
 {
-    /// POST /friends/request/{targetUserId}
     Task SendFriendRequestAsync(
-        Guid targetUserId,
+        string targetUsername,
         Guid currentUserId,
         CancellationToken ct
     );
 
-    /// POST /friends/accept/{requestUserId}
     Task AcceptFriendRequestAsync(
-        Guid requestUserId,
+        string targetUsername,
         Guid currentUserId,
         CancellationToken ct
     );
 
-    /// POST /friends/reject/{requestUserId}
     Task RejectFriendRequestAsync(
-        Guid requestUserId,
+        string targetUsername,
         Guid currentUserId,
         CancellationToken ct
     );
 
-    /// DELETE /friends/{targetUserId}
     Task RemoveFriendAsync(
-        Guid targetUserId,
+        string targetUsername,
         Guid currentUserId,
         CancellationToken ct
     );
 
-    /// POST /users/{targetUserId}/block
     Task BlockUserAsync(
-        Guid targetUserId,
+        string targetUsername,
         Guid currentUserId,
         CancellationToken ct
     );
 
-    /// DELETE /users/{targetUserId}/block
     Task UnblockUserAsync(
-        Guid targetUserId,
+        string targetUsername,
         Guid currentUserId,
         CancellationToken ct
     );
 
-    /// GET /friends
-    Task<IReadOnlyList<Guid>> GetFriendsAsync(
+    Task<IReadOnlyList<string>> GetFriendsAsync(
         Guid currentUserId,
         CancellationToken ct
     );
 
     /// GET /friends/requests
-    Task<IReadOnlyList<Guid>> GetIncomingFriendRequestsAsync(
+    Task<IReadOnlyList<string>> GetIncomingFriendRequestsAsync(
         Guid currentUserId,
         CancellationToken ct
     );

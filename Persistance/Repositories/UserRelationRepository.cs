@@ -45,7 +45,8 @@ public class UserRelationRepository : IUserRelationRepository
         RelationStatus? status, CancellationToken ct)
     {
         return await _dbContext.UserRelations
-            .Where(ur => ur.TargetUserId == targetUserId && ur.RelationType == relationType && (status == null || ur.Status == status))
+            .Where(ur => ur.TargetUserId == targetUserId && ur.RelationType == relationType &&
+                         (status == null || ur.Status == status))
             .ToListAsync(ct);
     }
 
@@ -59,15 +60,28 @@ public class UserRelationRepository : IUserRelationRepository
     public async Task AddAsync(UserRelation relation, CancellationToken ct)
     {
         await _dbContext.UserRelations.AddAsync(relation, ct);
-        await _dbContext.SaveChangesAsync(ct);
     }
 
-    public async Task RemoveAsync(UserRelation relation, CancellationToken ct)
+    public void RemoveAsync(UserRelation relation, CancellationToken ct)
     {
         _dbContext.UserRelations.Remove(relation);
-        await _dbContext.SaveChangesAsync(ct);
     }
 
+    public async Task RemoveRangeAsync(
+        Guid userId,
+        Guid targetUserId,
+        RelationTypeEnum relationType,
+        CancellationToken ct
+    )
+    {
+        await _dbContext.UserRelations
+            .Where(ur =>
+                ur.UserId == userId &&
+                ur.TargetUserId == targetUserId &&
+                ur.RelationType == relationType
+            )
+            .ExecuteDeleteAsync(ct);
+    }
     public async Task SaveChangesAsync(CancellationToken ct)
     {
         await _dbContext.SaveChangesAsync(ct);

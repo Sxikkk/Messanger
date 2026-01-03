@@ -70,6 +70,21 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpGet("confirm-email")]
+    public async Task<IActionResult> ConfirmEmailAsync(string token, string email, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var confirm = await _authService.ConfirmEmail(token, email, cancellationToken);
+            return Ok(confirm ? "Email confirmed" : "Email not confirmed");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+    
     [HttpPost("resend-confirmation")]
     [Authorize]
     public async Task<IActionResult> ResendConfirmationAsync(CancellationToken cancellationToken = default)
