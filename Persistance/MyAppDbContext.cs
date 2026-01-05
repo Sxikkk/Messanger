@@ -8,6 +8,7 @@ public class MyAppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<UserSettings> UserSettings { get; set; }
     public DbSet<UserRelation> UserRelations { get; set; }
+    public DbSet<UserSession> UserSessions { get; set; }
 
     public MyAppDbContext(DbContextOptions<MyAppDbContext> options) : base(options)
     {
@@ -21,8 +22,22 @@ public class MyAppDbContext : DbContext
                 .WithOne(s => s.User)
                 .HasForeignKey<UserSettings>(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
-            
+
             user.HasIndex(u => u.Id).IsUnique();
+        });
+
+        modelBuilder.Entity<UserSession>(sessoin =>
+        {
+            sessoin.HasOne(s => s.User)
+                .WithMany(u => u.Sessions)
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            sessoin.OwnsOne(s => s.RefreshToken, rt => { rt.HasIndex(x => x.TokenHashed).IsUnique(); });
+
+            sessoin.HasIndex(s => s.UserId);
+            sessoin.HasIndex(s => s.Id).IsUnique();
+            sessoin.HasIndex(s => s.DeviceId);
         });
 
         modelBuilder.Entity<UserRelation>(relation =>
@@ -55,12 +70,12 @@ public class MyAppDbContext : DbContext
                     .HasConversion<string>()
                     .HasMaxLength(32)
                     .IsRequired();
-                
+
                 relation.Property(x => x.Status)
                     .HasConversion<string>()
                     .HasMaxLength(32)
                     .IsRequired();
-                
+
                 relation.HasIndex(x => x.UserId);
                 relation.HasIndex(x => x.TargetUserId);
                 relation.HasIndex(x => new { x.UserId, x.RelationType, x.Status });

@@ -20,8 +20,7 @@ public class AuthService : IAuthService
         IJwtService jwtService,
         IPasswordHasher passwordHasher,
         ITokenHasher tokenHasher,
-        IEmailService emailService
-    )
+        IEmailService emailService, IUserSessionRepository userSessionRepository)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
@@ -30,25 +29,14 @@ public class AuthService : IAuthService
         _emailService = emailService;
     }
 
-    public async Task<TokenResponse?> CreateUserAsync(RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<TokenResponse?> CreateUserAsync(RegisterRequest request, string userAgent,
+        CancellationToken cancellationToken)
     {
         var hashedPassword = _passwordHasher.HashPassword(request.Password);
-        var refreshToken = _jwtService.GenerateRefreshToken();
-        var user = new User(request.Email, hashedPassword, request.Login, _tokenHasher.HashToken(refreshToken),
+        var user = new User(request.Email, hashedPassword, request.Login,
             request.Name,
             request.Username,
             request.Surname);
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.Name),
-            new Claim("Login", user.Login),
-            new Claim("Username", user.Username),
-        };
-
-        var accessToken = _jwtService.GenerateAccessToken(claims);
 
         var emailConfirmationToken = _jwtService.GenerateAccessToken([new Claim(ClaimTypes.Email, user.Email)]);
         user = user with
@@ -68,13 +56,28 @@ public class AuthService : IAuthService
 
         await _emailService.SendEmailAsync(request.Email, "Подтверждение регистрации", htmlBody, cancellationToken);
 
-        return request.LoginAfter
-            ? new TokenResponse
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            }
-            : null;
+        if (!request.LoginAfter) return null;
+       
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.Name),
+            new Claim("Login", user.Login),
+            new Claim("Username", user.Username),
+        };
+
+        var accessToken = _jwtService.GenerateAccessToken(claims);
+        var refreshToken = _jwtService.GenerateRefreshToken();
+
+        var session = _
+        
+        return new TokenResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken
+        };
+
     }
 
     public async Task<TokenResponse?> LoginUser(LoginRequest request, CancellationToken cancellationToken)
@@ -105,13 +108,16 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<TokenResponse?> RefreshTokenAsync(RefreshRequest request, string login, CancellationToken cancellationToken)
+    public async Task<TokenResponse?> RefreshTokenAsync(string token, string login, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetUserByLoginAsync(login, cancellationToken);
 
         if (user == null) return null;
 
-        if (!_tokenHasher.VerifyToken(request.RefreshToken, user.RefreshToken)) return null;
+        var session = await _userSessionRepository.GetUserSessionByTokenAsync(token, cancellationToken);
+        ArgumentNullException.ThrowIfNull(session, "session not found");
+
+        if (!_tokenHasher.VerifyToken(token,)) return null;
 
         var newRefreshToken = _jwtService.GenerateRefreshToken();
         user.RefreshToken = _tokenHasher.HashToken(newRefreshToken);

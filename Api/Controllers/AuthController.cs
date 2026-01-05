@@ -11,10 +11,12 @@ namespace Messanger.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IConfiguration configuration)
     {
         _authService = authService;
+        _configuration = configuration;
     }
 
     [HttpPost("register")]
@@ -23,8 +25,17 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var tokenResponse = await _authService.CreateUserAsync(request, cancellationToken);
-            return Ok(tokenResponse);
+            var userAgentString = Request.Headers.UserAgent.ToString();
+            var tokenResponse = await _authService.CreateUserAsync(request, userAgentString, cancellationToken);
+            Response.Cookies.Append("refreshToken", tokenResponse.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
+                Path = "/"
+            });
+            return Ok(new { AccessToken = tokenResponse.AccessToken });
         }
         catch (Exception e)
         {
@@ -40,7 +51,15 @@ public class AuthController : ControllerBase
         try
         {
             var tokenResponse = await _authService.LoginUser(request, cancellationToken);
-            return Ok(tokenResponse);
+            Response.Cookies.Append("refreshToken", tokenResponse.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
+                Path = "/"
+            });
+            return Ok(new { AccessToken = tokenResponse.AccessToken });
         }
         catch (Exception e)
         {
@@ -51,17 +70,25 @@ public class AuthController : ControllerBase
 
     [HttpPost("refresh")]
     [Authorize]
-    public async Task<IActionResult> RefreshAsync([FromBody] RefreshRequest request,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> RefreshAsync(CancellationToken cancellationToken = default)
     {
         try
         {
             var login = User.FindFirstValue("Login");
             ArgumentNullException.ThrowIfNull(login);
-            var token = await _authService.RefreshTokenAsync(request, login, cancellationToken);
+            var refreshToken = Request.Cookies.SingleOrDefault((k) => k.Key == "refreshToken").Value;
+            ArgumentNullException.ThrowIfNull(refreshToken);
+            var token = await _authService.RefreshTokenAsync(refreshToken, login, cancellationToken);
             if (token is null) return Unauthorized();
-
-            return Ok(token);
+            Response.Cookies.Append("refreshToken", token.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
+                Path = "/"
+            });
+            return Ok(new { AccessToken = token.AccessToken });
         }
         catch (Exception e)
         {
@@ -71,7 +98,8 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("confirm-email")]
-    public async Task<IActionResult> ConfirmEmailAsync(string token, string email, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ConfirmEmailAsync(string token, string email,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -84,7 +112,7 @@ public class AuthController : ControllerBase
             throw;
         }
     }
-    
+
     [HttpPost("resend-confirmation")]
     [Authorize]
     public async Task<IActionResult> ResendConfirmationAsync(CancellationToken cancellationToken = default)
@@ -94,7 +122,7 @@ public class AuthController : ControllerBase
 
         try
         {
-            var userEmail =  User.FindFirstValue(ClaimTypes.Email);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
             ArgumentNullException.ThrowIfNull(userEmail);
             await _authService.ResendConfirmationEmailAsync(userEmail, cancellationToken);
             return Ok();
@@ -104,5 +132,19 @@ public class AuthController : ControllerBase
             Console.WriteLine(ex);
             return StatusCode(500, new { message = "Произошла ошибка при отправке письма" });
         }
+    }
+    
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromHeader] string deviceId)
+    {
+        Response.Cookies.Delete("refreshToken", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Path = "/"
+        });
+        
+        return Ok();
     }
 }
