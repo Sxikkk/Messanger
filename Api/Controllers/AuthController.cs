@@ -20,22 +20,24 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest request,
+    public async Task<IActionResult> RegisterAsync([FromHeader] string deviceId, [FromBody] RegisterRequest request,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var userAgentString = Request.Headers.UserAgent.ToString();
-            var tokenResponse = await _authService.CreateUserAsync(request, userAgentString, cancellationToken);
+            var tokenResponse = await _authService.CreateUserAsync(request, userAgentString, deviceId, cancellationToken);
+            if (tokenResponse is null) return Ok();
             Response.Cookies.Append("refreshToken", tokenResponse.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
                 Path = "/"
             });
             return Ok(new { AccessToken = tokenResponse.AccessToken });
+
         }
         catch (Exception e)
         {
@@ -45,17 +47,17 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request, [FromHeader] string deviceId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var tokenResponse = await _authService.LoginUser(request, cancellationToken);
+            var userAgentString = Request.Headers.UserAgent.ToString();
+            var tokenResponse = await _authService.LoginUser(request, userAgentString, deviceId, cancellationToken);
             Response.Cookies.Append("refreshToken", tokenResponse.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
                 Path = "/"
             });
@@ -69,22 +71,21 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
-    [Authorize]
+    [AllowAnonymous]
     public async Task<IActionResult> RefreshAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var login = User.FindFirstValue("Login");
-            ArgumentNullException.ThrowIfNull(login);
-            var refreshToken = Request.Cookies.SingleOrDefault((k) => k.Key == "refreshToken").Value;
+            if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
+                return Unauthorized();
             ArgumentNullException.ThrowIfNull(refreshToken);
-            var token = await _authService.RefreshTokenAsync(refreshToken, login, cancellationToken);
+            var token = await _authService.RefreshTokenAsync(refreshToken, cancellationToken);
             if (token is null) return Unauthorized();
             Response.Cookies.Append("refreshToken", token.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.Strict,
+                SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
                 Path = "/"
             });
@@ -135,16 +136,28 @@ public class AuthController : ControllerBase
     }
     
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout([FromHeader] string deviceId)
+    public async Task<IActionResult> Logout([FromHeader] string deviceId, CancellationToken ct = default)
     {
-        Response.Cookies.Delete("refreshToken", new CookieOptions
+        try
         {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Path = "/"
-        });
-        
-        return Ok();
+            var token = Request.Cookies.SingleOrDefault((k) => k.Key == "refreshToken").Value;
+
+            await _authService.LogoutUserAsync(token, deviceId, ct);
+
+            Response.Cookies.Delete("refreshToken", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Path = "/"
+            });
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }

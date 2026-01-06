@@ -13,18 +13,18 @@ public class UserSession
 
     public DateTimeOffset CreatedAt { get; init; }
     public DateTimeOffset LastUsedAt { get; set; }
-    public RefreshToken RefreshToken { get; init; }
-
+    public RefreshToken RefreshToken { get; init; } = null!;
     [JsonIgnore] public User User { get; init; }
 
+    private UserSession() { }
+    
     public UserSession(
         string deviceId,
         Guid userId,
         RefreshToken refreshToken,
         string? displayName,
         DateTimeOffset createdAt,
-        DateTimeOffset lastUsedAt
-    )
+        DateTimeOffset lastUsedAt)
     {
         Id = Guid.NewGuid();
         DeviceId = deviceId;

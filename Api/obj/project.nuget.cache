@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "n+zufvlsJjk=",
+  "dgSpecHash": "wncldK9Bk40=",
   "success": true,
   "projectFilePath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Api\\Api.csproj",
   "expectedPackageFiles": [
@@ -14,11 +14,11 @@
     "C:\\Users\\wallk\\.nuget\\packages\\microsoft.entityframeworkcore\\9.0.11\\microsoft.entityframeworkcore.9.0.11.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\9.0.11\\microsoft.entityframeworkcore.abstractions.9.0.11.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\microsoft.entityframeworkcore.analyzers\\9.0.11\\microsoft.entityframeworkcore.analyzers.9.0.11.nupkg.sha512",
-    "C:\\Users\\wallk\\.nuget\\packages\\microsoft.entityframeworkcore.relational\\9.0.1\\microsoft.entityframeworkcore.relational.9.0.1.nupkg.sha512",
+    "C:\\Users\\wallk\\.nuget\\packages\\microsoft.entityframeworkcore.relational\\9.0.11\\microsoft.entityframeworkcore.relational.9.0.11.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\microsoft.extensions.apidescription.server\\9.0.0\\microsoft.extensions.apidescription.server.9.0.0.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\microsoft.extensions.caching.abstractions\\9.0.11\\microsoft.extensions.caching.abstractions.9.0.11.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\microsoft.extensions.caching.memory\\9.0.11\\microsoft.extensions.caching.memory.9.0.11.nupkg.sha512",
-    "C:\\Users\\wallk\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\9.0.1\\microsoft.extensions.configuration.abstractions.9.0.1.nupkg.sha512",
+    "C:\\Users\\wallk\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\9.0.11\\microsoft.extensions.configuration.abstractions.9.0.11.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\microsoft.extensions.dependencyinjection\\9.0.11\\microsoft.extensions.dependencyinjection.9.0.11.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\9.0.11\\microsoft.extensions.dependencyinjection.abstractions.9.0.11.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\microsoft.extensions.logging\\9.0.11\\microsoft.extensions.logging.9.0.11.nupkg.sha512",

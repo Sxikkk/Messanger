@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Persistance;
 using Persistance.Repositories;
-using RolesPractice.AppDbContext;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -114,6 +113,8 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
+    
+    c.OperationFilter<DeviceIdHeaderFilter>();
 });
 
 builder.Services.Configure<SwaggerUIOptions>(options =>
@@ -154,6 +155,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+
+app.UseHttpsRedirection();
 
 app.UseCors("ReactApp");
 

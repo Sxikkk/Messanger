@@ -23,65 +23,59 @@ public class MyAppDbContext : DbContext
                 .HasForeignKey<UserSettings>(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            user.HasIndex(u => u.Id).IsUnique();
+            user.HasIndex(u => u.Email).IsUnique();
+            user.HasIndex(u => u.Login).IsUnique();
+            user.HasIndex(u => u.Username).IsUnique();
         });
 
-        modelBuilder.Entity<UserSession>(sessoin =>
+        modelBuilder.Entity<UserSession>(session =>
         {
-            sessoin.HasOne(s => s.User)
+            session.HasOne(s => s.User)
                 .WithMany(u => u.Sessions)
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            sessoin.OwnsOne(s => s.RefreshToken, rt => { rt.HasIndex(x => x.TokenHashed).IsUnique(); });
+            session.OwnsOne(s => s.RefreshToken, rt =>
+            {
+                rt.Property(x => x.TokenHashed).HasColumnName("RefreshTokenHashed");
+                rt.Property(x => x.ExpiresAt).HasColumnName("RefreshTokenExpiresAt");
+                rt.HasIndex(x => x.TokenHashed).IsUnique();
+                rt.HasIndex(x => x.ExpiresAt);
+            });
 
-            sessoin.HasIndex(s => s.UserId);
-            sessoin.HasIndex(s => s.Id).IsUnique();
-            sessoin.HasIndex(s => s.DeviceId);
+            session.HasIndex(s => s.UserId);
+            session.HasIndex(s => s.Id).IsUnique();
+            session.HasIndex(s => s.DeviceId);
+            session.HasIndex(s => new { s.UserId, s.DeviceId }).IsUnique();
         });
 
         modelBuilder.Entity<UserRelation>(relation =>
-            {
-                relation.HasKey(x => new
-                {
-                    x.UserId,
-                    x.TargetUserId,
-                    x.RelationType
-                });
+        {
+            relation.HasKey(x => new { x.UserId, x.TargetUserId, x.RelationType });
 
-                relation.Property(x => x.RelationType)
-                    .HasMaxLength(32)
-                    .IsRequired();
+            relation.Property(x => x.RelationType)
+                .HasConversion<string>()
+                .HasMaxLength(32)
+                .IsRequired();
 
-                relation.Property(x => x.Status)
-                    .HasMaxLength(32);
+            relation.Property(x => x.Status)
+                .HasConversion<string>()
+                .HasMaxLength(32);
 
-                relation.HasOne(x => x.User)
-                    .WithMany()
-                    .HasForeignKey(x => x.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+            relation.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-                relation.HasOne(x => x.TargetUser)
-                    .WithMany()
-                    .HasForeignKey(x => x.TargetUserId)
-                    .OnDelete(DeleteBehavior.Cascade);
+            relation.HasOne(x => x.TargetUser)
+                .WithMany()
+                .HasForeignKey(x => x.TargetUserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-                relation.Property(x => x.RelationType)
-                    .HasConversion<string>()
-                    .HasMaxLength(32)
-                    .IsRequired();
-
-                relation.Property(x => x.Status)
-                    .HasConversion<string>()
-                    .HasMaxLength(32)
-                    .IsRequired();
-
-                relation.HasIndex(x => x.UserId);
-                relation.HasIndex(x => x.TargetUserId);
-                relation.HasIndex(x => new { x.UserId, x.RelationType, x.Status });
-            }
-        );
-
+            relation.HasIndex(x => x.UserId);
+            relation.HasIndex(x => x.TargetUserId);
+            relation.HasIndex(x => new { x.UserId, x.RelationType, x.Status });
+        });
 
         base.OnModelCreating(modelBuilder);
     }

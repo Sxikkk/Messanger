@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Persistance;
 
-namespace RolesPractice.AppDbContext;
+namespace Persistance;
 
 public class DatabaseCreator
 {

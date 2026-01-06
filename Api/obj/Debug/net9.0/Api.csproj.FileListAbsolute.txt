@@ -78,3 +78,6 @@ C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\BouncyCastle.Cryptogr
 C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\MailKit.dll
 C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\MimeKit.dll
 C:\Users\wallk\source\repos\Messanger\Api\obj\Debug\net9.0\Api.sourcelink.json
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\DeviceDetector.NET.dll
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\LiteDB.dll
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\YamlDotNet.dll

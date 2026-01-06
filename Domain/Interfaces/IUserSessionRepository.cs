@@ -10,6 +10,6 @@ public interface IUserSessionRepository
     Task RemoveUserSessionAsync(UserSession userSession, CancellationToken cancellationToken);
     Task RemoveRangeUserSessionAsync(UserSession userSession, CancellationToken cancellationToken);
     Task<IReadOnlyList<UserSession>> GetUserSessionsByUserIdAsync(Guid userId, CancellationToken cancellationToken);
-    
+
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

@@ -28,17 +28,17 @@ public class UserSessionRepository : IUserSessionRepository
 
     public async Task<bool> AddUserSessionAsync(UserSession userSession, CancellationToken cancellationToken)
     {
-        var exist = await _dbContext.UserSessions.AnyAsync(
-            us => us.RefreshToken == userSession.RefreshToken,
-            cancellationToken: cancellationToken);
-
-        if (exist)
+        try
+        {
+            await _dbContext.UserSessions.AddAsync(userSession, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateException)
         {
             return false;
         }
 
-        await _dbContext.UserSessions.AddAsync(userSession, cancellationToken);
-        return true;
     }
 
     public async Task RemoveUserSessionAsync(UserSession userSession, CancellationToken cancellationToken)

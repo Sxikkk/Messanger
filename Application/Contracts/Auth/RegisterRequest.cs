@@ -12,5 +12,4 @@ public sealed record RegisterRequest
     public string? Surname { get; init; }
     public string? Username { get; init; }
     public bool LoginAfter { get; init; } = true;
-    public string DeviceId { get; init; }
 };
