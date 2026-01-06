@@ -54,7 +54,7 @@ public class UserRepository : IUserRepository
             u.Email == user.Email || u.Login == user.Login, cancellationToken: cancellationToken);
 
         if (exists)
-            throw new AlreadyExistException($"{user.Login} - {user.Email}");
+            throw new AlreadyExistEmailOrLoginException($"{user.Login} - {user.Email}");
 
         await _dbContext.Users.AddAsync(user, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);

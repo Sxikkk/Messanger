@@ -11,20 +11,33 @@ namespace Messanger.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, IConfiguration configuration)
     {
         _authService = authService;
+        _configuration = configuration;
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> RegisterAsync([FromBody] RegisterRequest request,
+    public async Task<IActionResult> RegisterAsync([FromHeader] string deviceId, [FromBody] RegisterRequest request,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var tokenResponse = await _authService.CreateUserAsync(request, cancellationToken);
-            return Ok(tokenResponse);
+            var userAgentString = Request.Headers.UserAgent.ToString();
+            var tokenResponse = await _authService.CreateUserAsync(request, userAgentString, deviceId, cancellationToken);
+            if (tokenResponse is null) return Ok();
+            Response.Cookies.Append("refreshToken", tokenResponse.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
+                Path = "/"
+            });
+            return Ok(new { AccessToken = tokenResponse.AccessToken });
+
         }
         catch (Exception e)
         {
@@ -34,13 +47,21 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> LoginAsync([FromBody] LoginRequest request, [FromHeader] string deviceId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var tokenResponse = await _authService.LoginUser(request, cancellationToken);
-            return Ok(tokenResponse);
+            var userAgentString = Request.Headers.UserAgent.ToString();
+            var tokenResponse = await _authService.LoginUser(request, userAgentString, deviceId, cancellationToken);
+            Response.Cookies.Append("refreshToken", tokenResponse.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
+                Path = "/"
+            });
+            return Ok(new { AccessToken = tokenResponse.AccessToken });
         }
         catch (Exception e)
         {
@@ -50,18 +71,25 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("refresh")]
-    [Authorize]
-    public async Task<IActionResult> RefreshAsync([FromBody] RefreshRequest request,
-        CancellationToken cancellationToken = default)
+    [AllowAnonymous]
+    public async Task<IActionResult> RefreshAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var login = User.FindFirstValue("Login");
-            ArgumentNullException.ThrowIfNull(login);
-            var token = await _authService.RefreshTokenAsync(request, login, cancellationToken);
+            if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
+                return Unauthorized();
+            ArgumentNullException.ThrowIfNull(refreshToken);
+            var token = await _authService.RefreshTokenAsync(refreshToken, cancellationToken);
             if (token is null) return Unauthorized();
-
-            return Ok(token);
+            Response.Cookies.Append("refreshToken", token.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
+                Path = "/"
+            });
+            return Ok(new { AccessToken = token.AccessToken });
         }
         catch (Exception e)
         {
@@ -71,7 +99,8 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("confirm-email")]
-    public async Task<IActionResult> ConfirmEmailAsync(string token, string email, CancellationToken cancellationToken = default)
+    public async Task<IActionResult> ConfirmEmailAsync(string token, string email,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -84,7 +113,7 @@ public class AuthController : ControllerBase
             throw;
         }
     }
-    
+
     [HttpPost("resend-confirmation")]
     [Authorize]
     public async Task<IActionResult> ResendConfirmationAsync(CancellationToken cancellationToken = default)
@@ -94,7 +123,7 @@ public class AuthController : ControllerBase
 
         try
         {
-            var userEmail =  User.FindFirstValue(ClaimTypes.Email);
+            var userEmail = User.FindFirstValue(ClaimTypes.Email);
             ArgumentNullException.ThrowIfNull(userEmail);
             await _authService.ResendConfirmationEmailAsync(userEmail, cancellationToken);
             return Ok();
@@ -103,6 +132,32 @@ public class AuthController : ControllerBase
         {
             Console.WriteLine(ex);
             return StatusCode(500, new { message = "Произошла ошибка при отправке письма" });
+        }
+    }
+    
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout([FromHeader] string deviceId, CancellationToken ct = default)
+    {
+        try
+        {
+            var token = Request.Cookies.SingleOrDefault((k) => k.Key == "refreshToken").Value;
+
+            await _authService.LogoutUserAsync(token, deviceId, ct);
+
+            Response.Cookies.Delete("refreshToken", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Path = "/"
+            });
+
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
         }
     }
 }

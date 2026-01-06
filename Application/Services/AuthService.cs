@@ -4,6 +4,7 @@ using Application.Interfaces;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Interfaces;
+using Domain.ValueObjects;
 
 namespace Application.Services;
 
@@ -14,41 +15,32 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenHasher _tokenHasher;
     private readonly IEmailService _emailService;
+    private readonly IUserSessionService _userSessionService;
 
     public AuthService(
         IUserRepository userRepository,
         IJwtService jwtService,
         IPasswordHasher passwordHasher,
         ITokenHasher tokenHasher,
-        IEmailService emailService
-    )
+        IEmailService emailService,
+        IUserSessionService userSessionService)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
         _passwordHasher = passwordHasher;
         _tokenHasher = tokenHasher;
         _emailService = emailService;
+        _userSessionService = userSessionService;
     }
 
-    public async Task<TokenResponse?> CreateUserAsync(RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<TokenResponse?> CreateUserAsync(RegisterRequest request, string userAgent, string deviceId,
+        CancellationToken cancellationToken)
     {
         var hashedPassword = _passwordHasher.HashPassword(request.Password);
-        var refreshToken = _jwtService.GenerateRefreshToken();
-        var user = new User(request.Email, hashedPassword, request.Login, _tokenHasher.HashToken(refreshToken),
+        var user = new User(request.Email, hashedPassword, request.Login,
             request.Name,
             request.Username,
             request.Surname);
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.Name),
-            new Claim("Login", user.Login),
-            new Claim("Username", user.Username),
-        };
-
-        var accessToken = _jwtService.GenerateAccessToken(claims);
 
         var emailConfirmationToken = _jwtService.GenerateAccessToken([new Claim(ClaimTypes.Email, user.Email)]);
         user = user with
@@ -68,16 +60,37 @@ public class AuthService : IAuthService
 
         await _emailService.SendEmailAsync(request.Email, "Подтверждение регистрации", htmlBody, cancellationToken);
 
-        return request.LoginAfter
-            ? new TokenResponse
-            {
-                AccessToken = accessToken,
-                RefreshToken = refreshToken
-            }
-            : null;
+        if (!request.LoginAfter) return null;
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.Name),
+            new Claim("Login", user.Login),
+            new Claim("Username", user.Username),
+        };
+
+        var accessToken = _jwtService.GenerateAccessToken(claims);
+        var refreshToken = _jwtService.GenerateRefreshToken();
+
+        var session = _userSessionService.CreateUserSession(user, deviceId, userAgent, new RefreshToken
+        {
+            TokenHashed = _tokenHasher.HashToken(refreshToken),
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7)
+        });
+
+        await _userSessionService.AddUserSessionAsync(session, cancellationToken);
+
+        return new TokenResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken
+        };
     }
 
-    public async Task<TokenResponse?> LoginUser(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<TokenResponse?> LoginUser(LoginRequest request, string userAgent, string deviceId,
+        CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetUserByEmailOrLoginAsync(request.LoginOrEmail, cancellationToken);
         if (user is null) throw new InvalidCredentialsException(null);
@@ -95,9 +108,15 @@ public class AuthService : IAuthService
 
         var accessToken = _jwtService.GenerateAccessToken(claims);
         var refreshToken = _jwtService.GenerateRefreshToken();
-        user.RefreshToken = _tokenHasher.HashToken(refreshToken);
 
-        await _userRepository.UpdateUserAsync(user, cancellationToken);
+        var session = _userSessionService.CreateUserSession(user, deviceId, userAgent, new RefreshToken
+        {
+            TokenHashed = _tokenHasher.HashToken(refreshToken),
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7)
+        });
+
+        await _userSessionService.AddUserSessionAsync(session, cancellationToken);
+
         return new TokenResponse
         {
             AccessToken = accessToken,
@@ -105,19 +124,25 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<TokenResponse?> RefreshTokenAsync(RefreshRequest request, string login, CancellationToken cancellationToken)
+    public async Task<TokenResponse?> RefreshTokenAsync(string token, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetUserByLoginAsync(login, cancellationToken);
+        ArgumentNullException.ThrowIfNull(token);
+        var hashedToken = _tokenHasher.HashToken(token);
 
-        if (user == null) return null;
+        var session = await _userSessionService.GetUserSessionsByTokenAsync(hashedToken, cancellationToken);
 
-        if (!_tokenHasher.VerifyToken(request.RefreshToken, user.RefreshToken)) return null;
+        ArgumentNullException.ThrowIfNull(session);
+        
+        var user = await _userRepository.GetUserByIdAsync(session.UserId, cancellationToken);
 
-        var newRefreshToken = _jwtService.GenerateRefreshToken();
-        user.RefreshToken = _tokenHasher.HashToken(newRefreshToken);
-        await _userRepository.UpdateUserAsync(user, cancellationToken);
-
+        ArgumentNullException.ThrowIfNull(user);
+        
         var accessToken = _jwtService.GenerateAccessToken(GetClaims(user));
+        var newRefreshToken = _jwtService.GenerateRefreshToken();
+
+        
+        await _userSessionService.UpdateSessionTokenAsync(session, _tokenHasher.HashToken(newRefreshToken),
+            DateTimeOffset.UtcNow.AddDays(7), cancellationToken);
 
         return new TokenResponse
         {
@@ -159,7 +184,7 @@ public class AuthService : IAuthService
         var confirmationToken = _jwtService.GenerateAccessToken([new Claim(ClaimTypes.Email, user.Email)]);
         var hashedToken = _tokenHasher.HashToken(confirmationToken);
 
-        if (hashedToken != null) user.EmailConfirmationToken = _tokenHasher.HashToken(hashedToken);
+        user.EmailConfirmationToken = hashedToken;
 
         var confirmationLink =
             $"http://localhost:5136/api/auth/confirm-email?token={confirmationToken}&email={Uri.EscapeDataString(email)}";
@@ -173,13 +198,21 @@ public class AuthService : IAuthService
         await _emailService.SendEmailAsync(email, "Повторное подтверждение email", htmlBody, cancellationToken);
     }
 
+    public async Task LogoutUserAsync(string token, string deviceId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(token);
+        await _userSessionService.RemoveSessionAsync(_tokenHasher.HashToken(token), deviceId, cancellationToken);
+    }
+
     private static IEnumerable<Claim> GetClaims(User user)
     {
         return
         [
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Login),
-            new Claim(ClaimTypes.Email, user.Email)
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.Name),
+            new Claim("Login", user.Login),
+            new Claim("Username", user.Username),
         ];
     }
 }
