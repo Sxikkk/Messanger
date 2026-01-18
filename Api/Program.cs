@@ -2,23 +2,29 @@ using System.Text;
 using Application.Interfaces;
 using Application.Services;
 using Domain.Interfaces;
+using Infrastructure.Services;
+using Messanger.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Persistance;
 using Persistance.Repositories;
+using StackExchange.Redis;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string? connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-                           ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+                       ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis")
+                            ?? throw new InvalidOperationException("Connection string 'Redis' not found.");
 
 builder.Services.AddDbContext<MyAppDbContext>(options =>
     options.UseNpgsql(connectionString, b => b.MigrationsAssembly("Messanger")));
 
 builder.Services.AddDbContextFactory<MyAppDbContext>(options =>
-    options.UseNpgsql(connectionString, b => b.MigrationsAssembly("Messanger")), 
+        options.UseNpgsql(connectionString, b => b.MigrationsAssembly("Messanger")),
     ServiceLifetime.Scoped);
 
 builder.Services.AddCors(options =>
@@ -26,17 +32,18 @@ builder.Services.AddCors(options =>
     options.AddPolicy("ReactApp", policy =>
     {
         policy.SetIsOriginAllowed(_ => true)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .WithExposedHeaders("Session-Id");
     });
 });
 
-var jwtKey = builder.Configuration["Jwt:Key"] 
+var jwtKey = builder.Configuration["Jwt:Key"]
              ?? throw new InvalidOperationException("JWT Key is missing in configuration.");
-var issuer = builder.Configuration["Jwt:Issuer"] 
+var issuer = builder.Configuration["Jwt:Issuer"]
              ?? throw new InvalidOperationException("JWT Issuer is missing.");
-var audience = builder.Configuration["Jwt:Audience"] 
+var audience = builder.Configuration["Jwt:Audience"]
                ?? throw new InvalidOperationException("JWT Audience is missing.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -113,7 +120,7 @@ builder.Services.AddSwaggerGen(c =>
             Array.Empty<string>()
         }
     });
-    
+
     c.OperationFilter<DeviceIdHeaderFilter>();
 });
 
@@ -124,12 +131,19 @@ builder.Services.Configure<SwaggerUIOptions>(options =>
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+    ConnectionMultiplexer.Connect(redisConnectionString)
+);
+builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<IUserSessionRepository, UserSessionRepository>();
 
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IUserSessionService, UserSessionService>();
+builder.Services.AddScoped<ISessionValidator, SessionValidator>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserRelationService, UserRelationService>();
@@ -140,13 +154,13 @@ builder.Services.AddScoped<ITokenHasher, TokenHasher>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.ReferenceHandler =
+            System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
     });
 
 DatabaseCreator.InitializeDatabaseAsync(connectionString).GetAwaiter().GetResult();
 
 var app = builder.Build();
-app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
 {
@@ -164,5 +178,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseMiddleware<UseSessionControl>();
 
 app.Run();

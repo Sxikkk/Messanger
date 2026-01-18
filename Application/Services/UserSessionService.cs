@@ -12,11 +12,13 @@ public class UserSessionService : IUserSessionService
 {
     private readonly IUserSessionRepository _userSessionRepository;
     private readonly ITokenHasher  _tokenHasher;
+    private readonly ICacheService _cacheService;
 
-    public UserSessionService(IUserSessionRepository userSessionRepository, ITokenHasher tokenHasher)
+    public UserSessionService(IUserSessionRepository userSessionRepository, ITokenHasher tokenHasher, ICacheService cacheService)
     {
         _userSessionRepository = userSessionRepository;
         _tokenHasher = tokenHasher;
+        _cacheService = cacheService;
     }
 
     private string GetUserAgentConvertedInfo(string userAgent)
@@ -76,7 +78,7 @@ public class UserSessionService : IUserSessionService
         await _userSessionRepository.SaveChangesAsync(ct);
     }
 
-    public async Task RemoveSessionAsync(string? hashedToken, string deviceId, CancellationToken ct)
+    public async Task<UserSession?> RemoveSessionAsync(string? hashedToken, string deviceId, CancellationToken ct)
     {
         var session = hashedToken is null 
             ? await _userSessionRepository.GetUserSessionByDeviceIdAsync(deviceId, ct) 
@@ -84,6 +86,7 @@ public class UserSessionService : IUserSessionService
         
         if (session != null) await _userSessionRepository.RemoveUserSessionAsync(session, ct);
         await _userSessionRepository.SaveChangesAsync(ct);
+        return session;
     }
 
     public async Task TerminateSessionsAsync(Guid userId, string currentToken, CancellationToken ct)
@@ -96,6 +99,7 @@ public class UserSessionService : IUserSessionService
                 continue;
 
             await _userSessionRepository.RemoveUserSessionAsync(session, ct);
+            await _cacheService.RemoveAsync($"session:{session.Id}");
         }
         await _userSessionRepository.SaveChangesAsync(ct);
     }
@@ -112,5 +116,6 @@ public class UserSessionService : IUserSessionService
 
         await _userSessionRepository.RemoveUserSessionAsync(session, ct);
         await _userSessionRepository.SaveChangesAsync(ct);
+        await _cacheService.RemoveAsync($"session:{session.Id}");
     }
 }

@@ -26,9 +26,9 @@ public class AuthController : ControllerBase
         try
         {
             var userAgentString = Request.Headers.UserAgent.ToString();
-            var tokenResponse = await _authService.CreateUserAsync(request, userAgentString, deviceId, cancellationToken);
-            if (tokenResponse is null) return Ok();
-            Response.Cookies.Append("refreshToken", tokenResponse.RefreshToken, new CookieOptions
+            var authResponse = await _authService.CreateUserAsync(request, userAgentString, deviceId, cancellationToken);
+            if (authResponse is null) return Ok();
+            Response.Cookies.Append("refreshToken", authResponse.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
@@ -36,7 +36,8 @@ public class AuthController : ControllerBase
                 Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
                 Path = "/"
             });
-            return Ok(new { AccessToken = tokenResponse.AccessToken });
+            Response.Headers.Append("Session-Id", authResponse.SessionId);
+            return Ok(new { AccessToken = authResponse.AccessToken });
 
         }
         catch (Exception e)
@@ -52,8 +53,8 @@ public class AuthController : ControllerBase
         try
         {
             var userAgentString = Request.Headers.UserAgent.ToString();
-            var tokenResponse = await _authService.LoginUser(request, userAgentString, deviceId, cancellationToken);
-            Response.Cookies.Append("refreshToken", tokenResponse.RefreshToken, new CookieOptions
+            var authResponse = await _authService.LoginUser(request, userAgentString, deviceId, cancellationToken);
+            Response.Cookies.Append("refreshToken", authResponse.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
@@ -61,7 +62,8 @@ public class AuthController : ControllerBase
                 Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
                 Path = "/"
             });
-            return Ok(new { AccessToken = tokenResponse.AccessToken });
+            Response.Headers.Append("Session-Id", authResponse.SessionId);
+            return Ok(new { AccessToken = authResponse.AccessToken });
         }
         catch (Exception e)
         {
@@ -79,9 +81,9 @@ public class AuthController : ControllerBase
             if (!Request.Cookies.TryGetValue("refreshToken", out var refreshToken))
                 return Unauthorized();
             ArgumentNullException.ThrowIfNull(refreshToken);
-            var token = await _authService.RefreshTokenAsync(refreshToken, cancellationToken);
-            if (token is null) return Unauthorized();
-            Response.Cookies.Append("refreshToken", token.RefreshToken, new CookieOptions
+            var authResponse = await _authService.RefreshTokenAsync(refreshToken, cancellationToken);
+            if (authResponse is null) return Unauthorized();
+            Response.Cookies.Append("refreshToken", authResponse.RefreshToken, new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
@@ -89,7 +91,8 @@ public class AuthController : ControllerBase
                 Expires = DateTimeOffset.UtcNow.AddDays(Convert.ToDouble(_configuration["Jwt:RefreshTokenExpiryDays"])),
                 Path = "/"
             });
-            return Ok(new { AccessToken = token.AccessToken });
+            Response.Headers.Append("Session-Id", authResponse.SessionId);
+            return Ok(new { AccessToken = authResponse.AccessToken });
         }
         catch (Exception e)
         {

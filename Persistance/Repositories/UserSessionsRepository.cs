@@ -62,4 +62,9 @@ public class UserSessionRepository : IUserSessionRepository
     {
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<bool> IsExist(Guid userId, string deviceId)
+    {
+        return await _dbContext.UserSessions.AnyAsync(us => us.DeviceId == deviceId && us.UserId == userId);
+    }
 }

@@ -12,4 +12,5 @@ public interface IUserSessionRepository
     Task<IReadOnlyList<UserSession>> GetUserSessionsByUserIdAsync(Guid userId, CancellationToken cancellationToken);
 
     Task SaveChangesAsync(CancellationToken cancellationToken);
+    Task<bool> IsExist(Guid userId, string deviceId);
 }

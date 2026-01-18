@@ -81,3 +81,12 @@ C:\Users\wallk\source\repos\Messanger\Api\obj\Debug\net9.0\Api.sourcelink.json
 C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\DeviceDetector.NET.dll
 C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\LiteDB.dll
 C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\YamlDotNet.dll
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\Infrastructure.deps.json
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\Infrastructure.runtimeconfig.json
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\Infrastructure.staticwebassets.endpoints.json
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\Infrastructure.exe
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\Pipelines.Sockets.Unofficial.dll
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\StackExchange.Redis.dll
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\System.IO.Hashing.dll
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\Infrastructure.dll
+C:\Users\wallk\source\repos\Messanger\Api\bin\Debug\net9.0\Infrastructure.pdb

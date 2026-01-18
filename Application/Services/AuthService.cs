@@ -16,14 +16,18 @@ public class AuthService : IAuthService
     private readonly ITokenHasher _tokenHasher;
     private readonly IEmailService _emailService;
     private readonly IUserSessionService _userSessionService;
-
+    private readonly ICacheService _cacheService;
+    
+    private readonly int _expireRefreshDays;
+    private readonly int _expireAccessMinutes;
     public AuthService(
         IUserRepository userRepository,
         IJwtService jwtService,
         IPasswordHasher passwordHasher,
         ITokenHasher tokenHasher,
         IEmailService emailService,
-        IUserSessionService userSessionService)
+        IUserSessionService userSessionService, 
+        IConfiguration configuration, ICacheService cacheService)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
@@ -31,9 +35,12 @@ public class AuthService : IAuthService
         _tokenHasher = tokenHasher;
         _emailService = emailService;
         _userSessionService = userSessionService;
+        _cacheService = cacheService;
+        _expireRefreshDays = configuration.GetSection("Jwt").GetValue<int>("RefreshTokenExpiryDays");
+        _expireAccessMinutes = configuration.GetSection("Jwt").GetValue<int>("AccessTokenExpiryMinutes");
     }
 
-    public async Task<TokenResponse?> CreateUserAsync(RegisterRequest request, string userAgent, string deviceId,
+    public async Task<AuthResponse?> CreateUserAsync(RegisterRequest request, string userAgent, string deviceId,
         CancellationToken cancellationToken)
     {
         var hashedPassword = _passwordHasher.HashPassword(request.Password);
@@ -77,19 +84,22 @@ public class AuthService : IAuthService
         var session = _userSessionService.CreateUserSession(user, deviceId, userAgent, new RefreshToken
         {
             TokenHashed = _tokenHasher.HashToken(refreshToken),
-            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7)
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(_expireRefreshDays)
         });
 
         await _userSessionService.AddUserSessionAsync(session, cancellationToken);
 
-        return new TokenResponse
+        await _cacheService.SetAsync($"session:{session.Id}", new { User = user.Username, CreatedAt = session.CreatedAt }, TimeSpan.FromMinutes(_expireAccessMinutes));
+        
+        return new AuthResponse
         {
             AccessToken = accessToken,
-            RefreshToken = refreshToken
+            RefreshToken = refreshToken,
+            SessionId =  session.Id.ToString(),
         };
     }
 
-    public async Task<TokenResponse?> LoginUser(LoginRequest request, string userAgent, string deviceId,
+    public async Task<AuthResponse?> LoginUser(LoginRequest request, string userAgent, string deviceId,
         CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetUserByEmailOrLoginAsync(request.LoginOrEmail, cancellationToken);
@@ -116,15 +126,18 @@ public class AuthService : IAuthService
         });
 
         await _userSessionService.AddUserSessionAsync(session, cancellationToken);
+       
+        await _cacheService.SetAsync($"session:{session.Id}", new { User = user.Username, CreatedAt = session.CreatedAt }, TimeSpan.FromMinutes(_expireAccessMinutes));
 
-        return new TokenResponse
+        return new AuthResponse
         {
             AccessToken = accessToken,
-            RefreshToken = refreshToken
+            RefreshToken = refreshToken,
+            SessionId =  session.Id.ToString(),
         };
     }
 
-    public async Task<TokenResponse?> RefreshTokenAsync(string token, CancellationToken cancellationToken)
+    public async Task<AuthResponse?> RefreshTokenAsync(string token, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(token);
         var hashedToken = _tokenHasher.HashToken(token);
@@ -142,12 +155,15 @@ public class AuthService : IAuthService
 
         
         await _userSessionService.UpdateSessionTokenAsync(session, _tokenHasher.HashToken(newRefreshToken),
-            DateTimeOffset.UtcNow.AddDays(7), cancellationToken);
+            DateTimeOffset.UtcNow.AddDays(_expireRefreshDays), cancellationToken);
 
-        return new TokenResponse
+        await _cacheService.SetAsync($"session:{session.Id}", new { User = user.Username, CreatedAt = session.CreatedAt }, TimeSpan.FromMinutes(_expireAccessMinutes));
+        
+        return new AuthResponse
         {
             AccessToken = accessToken,
-            RefreshToken = newRefreshToken
+            RefreshToken = newRefreshToken,
+            SessionId =  session.Id.ToString(),
         };
     }
 
@@ -201,7 +217,8 @@ public class AuthService : IAuthService
     public async Task LogoutUserAsync(string token, string deviceId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(token);
-        await _userSessionService.RemoveSessionAsync(_tokenHasher.HashToken(token), deviceId, cancellationToken);
+        var session = await _userSessionService.RemoveSessionAsync(_tokenHasher.HashToken(token), deviceId, cancellationToken);
+        if (session != null) await _cacheService.RemoveAsync($"session:{session.Id}");
     }
 
     private static IEnumerable<Claim> GetClaims(User user)
