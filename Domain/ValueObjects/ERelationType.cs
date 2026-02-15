@@ -1,6 +1,6 @@
 namespace Domain.ValueObjects;
 
-public enum RelationTypeEnum
+public enum ERelationType
 {
     Friend,
     Block

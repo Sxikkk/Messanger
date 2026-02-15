@@ -1,8 +1,9 @@
 using System.Text;
 using Application.Interfaces;
+using Application.Interfaces.CacheInterfaces;
 using Application.Services;
 using Domain.Interfaces;
-using Infrastructure.Services;
+using Infrastructure.Services.Redis;
 using Messanger.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -135,7 +136,8 @@ builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"))
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(redisConnectionString)
 );
-builder.Services.AddSingleton<ICacheService, RedisCacheService>();
+builder.Services.AddSingleton<ISessionCache, RedisSessionStore>();
+builder.Services.AddSingleton<IOnlineCache, RedisOnlineStore>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();

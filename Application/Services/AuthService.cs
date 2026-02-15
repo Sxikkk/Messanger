@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using Application.Contracts.Auth;
 using Application.Interfaces;
+using Application.Interfaces.CacheInterfaces;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Interfaces;
@@ -16,8 +17,8 @@ public class AuthService : IAuthService
     private readonly ITokenHasher _tokenHasher;
     private readonly IEmailService _emailService;
     private readonly IUserSessionService _userSessionService;
-    private readonly ICacheService _cacheService;
-    
+    private readonly ISessionCache _sessionCache;
+
     private readonly int _expireRefreshDays;
     private readonly int _expireAccessMinutes;
     public AuthService(
@@ -27,7 +28,7 @@ public class AuthService : IAuthService
         ITokenHasher tokenHasher,
         IEmailService emailService,
         IUserSessionService userSessionService, 
-        IConfiguration configuration, ICacheService cacheService)
+        IConfiguration configuration, ISessionCache sessionCache)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
@@ -35,7 +36,7 @@ public class AuthService : IAuthService
         _tokenHasher = tokenHasher;
         _emailService = emailService;
         _userSessionService = userSessionService;
-        _cacheService = cacheService;
+        _sessionCache = sessionCache;
         _expireRefreshDays = configuration.GetSection("Jwt").GetValue<int>("RefreshTokenExpiryDays");
         _expireAccessMinutes = configuration.GetSection("Jwt").GetValue<int>("AccessTokenExpiryMinutes");
     }
@@ -89,7 +90,7 @@ public class AuthService : IAuthService
 
         await _userSessionService.AddUserSessionAsync(session, cancellationToken);
 
-        await _cacheService.SetAsync($"session:{session.Id}", new { User = user.Username, CreatedAt = session.CreatedAt }, TimeSpan.FromMinutes(_expireAccessMinutes));
+        await _sessionCache.SetSessionAsync(session.Id);
         
         return new AuthResponse
         {
@@ -127,7 +128,7 @@ public class AuthService : IAuthService
 
         await _userSessionService.AddUserSessionAsync(session, cancellationToken);
        
-        await _cacheService.SetAsync($"session:{session.Id}", new { User = user.Username, CreatedAt = session.CreatedAt }, TimeSpan.FromMinutes(_expireAccessMinutes));
+        await _sessionCache.SetSessionAsync(session.Id);
 
         return new AuthResponse
         {
@@ -157,7 +158,7 @@ public class AuthService : IAuthService
         await _userSessionService.UpdateSessionTokenAsync(session, _tokenHasher.HashToken(newRefreshToken),
             DateTimeOffset.UtcNow.AddDays(_expireRefreshDays), cancellationToken);
 
-        await _cacheService.SetAsync($"session:{session.Id}", new { User = user.Username, CreatedAt = session.CreatedAt }, TimeSpan.FromMinutes(_expireAccessMinutes));
+        await _sessionCache.SetSessionAsync(session.Id);
         
         return new AuthResponse
         {
@@ -218,7 +219,7 @@ public class AuthService : IAuthService
     {
         ArgumentNullException.ThrowIfNull(token);
         var session = await _userSessionService.RemoveSessionAsync(_tokenHasher.HashToken(token), deviceId, cancellationToken);
-        if (session != null) await _cacheService.RemoveAsync($"session:{session.Id}");
+        if (session != null) await _sessionCache.RemoveSessionAsync(session.Id);
     }
 
     private static IEnumerable<Claim> GetClaims(User user)

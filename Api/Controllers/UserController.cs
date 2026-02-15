@@ -68,4 +68,12 @@ public class UserController : ControllerBase
             return BadRequest(500);
         }
     }
+    
+        
+    [HttpGet("users/{username}/presence")]
+    public async Task<IActionResult> GetUserPresence(string username, CancellationToken cancellationToken = default)
+    {
+       var data = await _userService.GetUserOnlineStatusAsync(username, cancellationToken);
+        return Ok(data);
+    }
 }

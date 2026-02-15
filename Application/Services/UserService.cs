@@ -1,5 +1,7 @@
+using Application.Contracts.Session;
 using Application.Contracts.User;
 using Application.Interfaces;
+using Application.Interfaces.CacheInterfaces;
 using Domain.Entities;
 using Domain.Interfaces;
 
@@ -8,10 +10,12 @@ namespace Application.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IOnlineCache _onlineCache;
 
-    public UserService(IUserRepository userRepository)
+    public UserService(IUserRepository userRepository, IOnlineCache onlineCache)
     {
         _userRepository = userRepository;
+        _onlineCache = onlineCache;
     }
 
     public async Task<ShortUserInfoResponse?> GetShortUserInfo(string username, CancellationToken cancellationToken)
@@ -51,4 +55,15 @@ public class UserService : IUserService
 
         await _userRepository.UpdateUserAsync(user, cancellationToken);
     }
+    public async Task<UserPresenceResponse> GetUserOnlineStatusAsync(string username, CancellationToken ct)
+    {
+        var isOnline = await _onlineCache.IsOnlineAsync(username);
+
+        return new UserPresenceResponse
+        {
+            Username = username,
+            IsOnline = isOnline,
+        };
+    }
+
 }

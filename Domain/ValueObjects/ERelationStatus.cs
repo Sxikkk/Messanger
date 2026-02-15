@@ -1,6 +1,6 @@
 namespace Domain.ValueObjects;
 
-public enum RelationStatus
+public enum ERelationStatus
 {
     Pending,
     Accepted,

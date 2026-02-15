@@ -58,6 +58,20 @@ public class UserSessionRepository : IUserSessionRepository
             .ToListAsync(cancellationToken: cancellationToken);
     }
 
+    public async Task<UserSession?> GetUserSessionByIdAsync(Guid sessionId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var session = await _dbContext.UserSessions.FirstOrDefaultAsync((us) => us.Id == sessionId, cancellationToken);
+            return session;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
     public async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         await _dbContext.SaveChangesAsync(cancellationToken);
