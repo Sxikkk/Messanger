@@ -1,0 +1,26 @@
+# Build artifacts
+bin/
+obj/
+
+# Rider / JetBrains
+.idea/
+*.sln.DotSettings.user
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# User-specific files
+*.user
+*.suo
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets and local env overrides
+**/appsettings.*.local.json
+.env
