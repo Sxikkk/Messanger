@@ -1,6 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using Application.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace Application.Services;
 
@@ -8,11 +9,9 @@ public class TokenHasher : ITokenHasher
 {
     private readonly byte[] _secret;
 
-    public TokenHasher(IConfiguration configuration)
+    public TokenHasher(IOptions<JwtSettings> options)
     {
-        var key = configuration["Jwt:Key"] 
-                  ?? throw new InvalidOperationException("JWT Key missing for TokenHasher");
-        _secret = Encoding.UTF8.GetBytes(key);
+        _secret = Encoding.UTF8.GetBytes(options.Value.SecretKey);
     }
     public string HashToken(string token)
     {

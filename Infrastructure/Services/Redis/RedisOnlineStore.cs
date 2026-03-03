@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Application.Interfaces.CacheInterfaces;
 using Domain.ValueObjects;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
 namespace Infrastructure.Services.Redis;
@@ -11,13 +12,13 @@ public class RedisOnlineStore: IOnlineCache
     private readonly TimeSpan _ttl;
 
     private const string Prefix = "online:";
-
+    
     public RedisOnlineStore(
         IConnectionMultiplexer redis,
-        IConfiguration configuration)
+        IOptions<OnlineStatusSettings> onlineSettings)
     {
         _db = redis.GetDatabase();
-        _ttl = TimeSpan.FromMinutes(configuration.GetValue("OnlineStatus:HeartbeatMinutes", 3));
+        _ttl = TimeSpan.FromMinutes(onlineSettings.Value.HeartbeatMinutes);
     }
 
 
@@ -25,20 +26,20 @@ public class RedisOnlineStore: IOnlineCache
     {
         var key = Prefix + username;
 
-        OnlineStatus entry;
+        OnlineStatus? entry;
 
         var value = await _db.StringGetAsync(key);
         if (value.HasValue)
         {
             entry = JsonSerializer.Deserialize<OnlineStatus>(value!);
             entry?.SetOnline();
-            await _db.StringSetAsync(key, JsonSerializer.Serialize(entry), _ttl);
         }
         else
         {
             entry = new OnlineStatus(EOnlineStatus.Online);
-            await _db.StringSetAsync(key, JsonSerializer.Serialize(entry), _ttl);
         }
+
+        await _db.StringSetAsync(key, JsonSerializer.Serialize(entry), _ttl);
     }
 
 

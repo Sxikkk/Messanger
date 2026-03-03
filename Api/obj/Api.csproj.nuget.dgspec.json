@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\wallk\\source\\repos\\Messanger\\Api\\Api.csproj": {}
+    "C:\\Users\\wallk\\RiderProjects\\Messanger\\Api\\Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\wallk\\source\\repos\\Messanger\\Api\\Api.csproj": {
+    "C:\\Users\\wallk\\RiderProjects\\Messanger\\Api\\Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\wallk\\source\\repos\\Messanger\\Api\\Api.csproj",
+        "projectUniqueName": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Api\\Api.csproj",
         "projectName": "Api",
-        "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Api\\Api.csproj",
+        "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Api\\Api.csproj",
         "packagesPath": "C:\\Users\\wallk\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Api\\obj\\",
+        "outputPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -33,14 +33,14 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\wallk\\source\\repos\\Messanger\\Application\\Application.csproj": {
-                "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Application\\Application.csproj"
+              "C:\\Users\\wallk\\RiderProjects\\Messanger\\Application\\Application.csproj": {
+                "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Application\\Application.csproj"
               },
-              "C:\\Users\\wallk\\source\\repos\\Messanger\\Infrastructure\\Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Infrastructure\\Infrastructure.csproj"
+              "C:\\Users\\wallk\\RiderProjects\\Messanger\\Infrastructure\\Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Infrastructure\\Infrastructure.csproj"
               },
-              "C:\\Users\\wallk\\source\\repos\\Messanger\\Persistance\\Persistance.csproj": {
-                "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Persistance\\Persistance.csproj"
+              "C:\\Users\\wallk\\RiderProjects\\Messanger\\Persistance\\Persistance.csproj": {
+                "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Persistance\\Persistance.csproj"
               }
             }
           }
@@ -89,14 +89,14 @@
         }
       }
     },
-    "C:\\Users\\wallk\\source\\repos\\Messanger\\Application\\Application.csproj": {
+    "C:\\Users\\wallk\\RiderProjects\\Messanger\\Application\\Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\wallk\\source\\repos\\Messanger\\Application\\Application.csproj",
+        "projectUniqueName": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Application\\Application.csproj",
         "projectName": "Application",
-        "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Application\\Application.csproj",
+        "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Application\\Application.csproj",
         "packagesPath": "C:\\Users\\wallk\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Application\\obj\\",
+        "outputPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -118,8 +118,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\wallk\\source\\repos\\Messanger\\Domain\\Domain.csproj": {
-                "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Domain\\Domain.csproj"
+              "C:\\Users\\wallk\\RiderProjects\\Messanger\\Domain\\Domain.csproj": {
+                "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Domain\\Domain.csproj"
               }
             }
           }
@@ -152,6 +152,10 @@
               "target": "Package",
               "version": "[4.14.1, )"
             },
+            "Microsoft.Extensions.Options": {
+              "target": "Package",
+              "version": "[9.0.11, )"
+            },
             "Microsoft.IdentityModel.Tokens": {
               "target": "Package",
               "version": "[8.0.1, )"
@@ -177,9 +181,6 @@
           "assetTargetFallback": true,
           "warn": true,
           "frameworkReferences": {
-            "Microsoft.AspNetCore.App": {
-              "privateAssets": "none"
-            },
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
@@ -188,14 +189,14 @@
         }
       }
     },
-    "C:\\Users\\wallk\\source\\repos\\Messanger\\Domain\\Domain.csproj": {
+    "C:\\Users\\wallk\\RiderProjects\\Messanger\\Domain\\Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\wallk\\source\\repos\\Messanger\\Domain\\Domain.csproj",
+        "projectUniqueName": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Domain\\Domain.csproj",
         "projectName": "Domain",
-        "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Domain\\Domain.csproj",
+        "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Domain\\Domain.csproj",
         "packagesPath": "C:\\Users\\wallk\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Domain\\obj\\",
+        "outputPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -246,9 +247,6 @@
           "assetTargetFallback": true,
           "warn": true,
           "frameworkReferences": {
-            "Microsoft.AspNetCore.App": {
-              "privateAssets": "none"
-            },
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
@@ -257,14 +255,14 @@
         }
       }
     },
-    "C:\\Users\\wallk\\source\\repos\\Messanger\\Infrastructure\\Infrastructure.csproj": {
+    "C:\\Users\\wallk\\RiderProjects\\Messanger\\Infrastructure\\Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\wallk\\source\\repos\\Messanger\\Infrastructure\\Infrastructure.csproj",
+        "projectUniqueName": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Infrastructure\\Infrastructure.csproj",
         "projectName": "Infrastructure",
-        "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Infrastructure\\Infrastructure.csproj",
+        "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Infrastructure\\Infrastructure.csproj",
         "packagesPath": "C:\\Users\\wallk\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Infrastructure\\obj\\",
+        "outputPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -286,8 +284,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\wallk\\source\\repos\\Messanger\\Application\\Application.csproj": {
-                "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Application\\Application.csproj"
+              "C:\\Users\\wallk\\RiderProjects\\Messanger\\Application\\Application.csproj": {
+                "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Application\\Application.csproj"
               }
             }
           }
@@ -325,9 +323,6 @@
           "assetTargetFallback": true,
           "warn": true,
           "frameworkReferences": {
-            "Microsoft.AspNetCore.App": {
-              "privateAssets": "none"
-            },
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
@@ -336,14 +331,14 @@
         }
       }
     },
-    "C:\\Users\\wallk\\source\\repos\\Messanger\\Persistance\\Persistance.csproj": {
+    "C:\\Users\\wallk\\RiderProjects\\Messanger\\Persistance\\Persistance.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\wallk\\source\\repos\\Messanger\\Persistance\\Persistance.csproj",
+        "projectUniqueName": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Persistance\\Persistance.csproj",
         "projectName": "Persistance",
-        "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Persistance\\Persistance.csproj",
+        "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Persistance\\Persistance.csproj",
         "packagesPath": "C:\\Users\\wallk\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Persistance\\obj\\",
+        "outputPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Persistance\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -365,8 +360,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "C:\\Users\\wallk\\source\\repos\\Messanger\\Domain\\Domain.csproj": {
-                "projectPath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Domain\\Domain.csproj"
+              "C:\\Users\\wallk\\RiderProjects\\Messanger\\Domain\\Domain.csproj": {
+                "projectPath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Domain\\Domain.csproj"
               }
             }
           }
@@ -442,9 +437,6 @@
           "assetTargetFallback": true,
           "warn": true,
           "frameworkReferences": {
-            "Microsoft.AspNetCore.App": {
-              "privateAssets": "none"
-            },
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }

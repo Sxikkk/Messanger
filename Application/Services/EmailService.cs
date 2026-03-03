@@ -1,6 +1,7 @@
 ﻿using Application.Interfaces;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.Extensions.Options;
 using MimeKit;
 
 namespace Application.Services;
@@ -13,13 +14,13 @@ public class EmailService : IEmailService
     private readonly string _smtpUser;
     private readonly string _smtpPass;
 
-    public EmailService(IConfiguration config)
+    public EmailService(IOptions<EmailSettings> options)
     {
-        _smtpHost = config["Email:SmtpHost"] ?? string.Empty;
-        _smtpPort = int.Parse(config["Email:SmtpPort"] ?? string.Empty);
-        _fromEmail = config["Email:FromEmail"] ?? string.Empty;
-        _smtpUser = config["Email:SmtpUser"] ?? string.Empty;
-        _smtpPass = config["Email:SmtpPass"] ?? string.Empty;
+        _smtpHost = options.Value.SmtpHost;
+        _smtpPort = options.Value.SmtpPort;
+        _fromEmail = options.Value.FromEmail;
+        _smtpUser = options.Value.SmtpUser;
+        _smtpPass = options.Value.SmtpPass;
     }
 
     public async Task SendEmailAsync(string toEmail, string subject, string body, CancellationToken cancellationToken)

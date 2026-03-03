@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "DlSbJDcrNmk=",
+  "dgSpecHash": "vJL8QuYq+Q0=",
   "success": true,
-  "projectFilePath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Persistance\\Persistance.csproj",
+  "projectFilePath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Persistance\\Persistance.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\wallk\\.nuget\\packages\\bcrypt.net-core\\1.6.0\\bcrypt.net-core.1.6.0.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",

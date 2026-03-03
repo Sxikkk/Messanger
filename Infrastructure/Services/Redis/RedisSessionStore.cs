@@ -1,4 +1,6 @@
+using Application;
 using Application.Interfaces.CacheInterfaces;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
 namespace Infrastructure.Services.Redis;
@@ -12,11 +14,10 @@ public class RedisSessionStore : ISessionCache
 
     public RedisSessionStore(
         IConnectionMultiplexer redis,
-        IConfiguration configuration)
+        IOptions<JwtSettings> jwtSettings)
     {
         _db = redis.GetDatabase();
-        _ttl = TimeSpan.FromMinutes(
-            configuration.GetValue<int>("Jwt:AccessTokenExpiryMinutes"));
+        _ttl = TimeSpan.FromMinutes(jwtSettings.Value.AccessTokenExpiryMinutes);
     }
 
     public async Task SetSessionAsync(Guid sessionId)

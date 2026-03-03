@@ -1,8 +1,10 @@
 using System.Text;
+using Application;
 using Application.Interfaces;
 using Application.Interfaces.CacheInterfaces;
 using Application.Services;
 using Domain.Interfaces;
+using Infrastructure;
 using Infrastructure.Services.Redis;
 using Messanger.Middlewares;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -40,7 +42,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-var jwtKey = builder.Configuration["Jwt:Key"]
+var jwtKey = builder.Configuration["Jwt:SecretKey"]
              ?? throw new InvalidOperationException("JWT Key is missing in configuration.");
 var issuer = builder.Configuration["Jwt:Issuer"]
              ?? throw new InvalidOperationException("JWT Issuer is missing.");
@@ -131,7 +133,8 @@ builder.Services.Configure<SwaggerUIOptions>(options =>
 });
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
-
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.Configure<OnlineStatusSettings>(builder.Configuration.GetSection("OnlineStatus"));
 
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(redisConnectionString)
@@ -179,8 +182,8 @@ app.UseCors("ReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
-
 app.UseMiddleware<UseSessionControl>();
+
+app.MapControllers();
 
 app.Run();

@@ -39,9 +39,14 @@ public class UseSessionControl
         if (session == false)
         {
             var basedSession = await sessionService.GetUserSessuionById(sessionId, ct: CancellationToken.None);
-            if (basedSession is not null) return;
+            if (basedSession is not null)
+            {
+                await _next(context);
+                return;
+            };
             context.Response.StatusCode = 401;
             await context.Response.WriteAsync("Invalid session");
+            await _next(context);
             return;
         }
 
