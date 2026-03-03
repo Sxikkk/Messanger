@@ -1,5 +1,5 @@
 using Application.Interfaces;
-using Domain.Entities;
+using Application.Interfaces.CacheInterfaces;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Messanger.Middlewares;
@@ -7,16 +7,18 @@ namespace Messanger.Middlewares;
 public class UseSessionControl
 {
     private readonly RequestDelegate _next;
-    private readonly ICacheService _cacheService;
+    private readonly ISessionCache _sessionCache;
 
-    public UseSessionControl(RequestDelegate next, ICacheService cacheService)
+    public UseSessionControl(RequestDelegate next, ISessionCache sessionCache)
     {
         _next = next;
-        _cacheService = cacheService;
+        _sessionCache = sessionCache;
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
+        var sessionService = context.RequestServices.GetRequiredService<IUserSessionService>();
+
         var endpoint = context.GetEndpoint();
 
         var authorizeAttr = endpoint?.Metadata.GetMetadata<AuthorizeAttribute>();
@@ -25,24 +27,30 @@ public class UseSessionControl
             await _next(context);
             return;
         }
-
-        if (!context.Request.Headers.TryGetValue("Session-Id", out var sessionId))
+        if (!Guid.TryParse(context.Request.Headers["Session-Id"], out var sessionId))
         {
             context.Response.StatusCode = 401;
             await context.Response.WriteAsync("No session");
             return;
         }
 
-        var session = await _cacheService.GetAsync<UserSession>($"session:{sessionId}");
-        Console.WriteLine(sessionId);
-        if (session == null)
+        var session = await _sessionCache.HasSessionAsync(sessionId);
+
+        if (session == false)
         {
+            var basedSession = await sessionService.GetUserSessuionById(sessionId, ct: CancellationToken.None);
+            if (basedSession is not null)
+            {
+                await _next(context);
+                return;
+            };
             context.Response.StatusCode = 401;
             await context.Response.WriteAsync("Invalid session");
+            await _next(context);
             return;
         }
 
-        context.Items["Session"] = session;
+        context.Items["Session"] = sessionId;
 
         await _next(context);
     }

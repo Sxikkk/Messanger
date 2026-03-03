@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "XfXkJtCpm+o=",
+  "dgSpecHash": "dT8rwDnF0TM=",
   "success": true,
-  "projectFilePath": "C:\\Users\\wallk\\source\\repos\\Messanger\\Api\\Api.csproj",
+  "projectFilePath": "C:\\Users\\wallk\\RiderProjects\\Messanger\\Api\\Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\wallk\\.nuget\\packages\\bcrypt.net-core\\1.6.0\\bcrypt.net-core.1.6.0.nupkg.sha512",
     "C:\\Users\\wallk\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",

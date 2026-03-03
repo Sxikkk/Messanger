@@ -8,6 +8,7 @@ namespace Application.Interfaces;
 public interface IUserSessionService
 {
     UserSession CreateUserSession(User user, string deviceId, string userAgent, RefreshToken refreshToken);    
+    Task<UserSession?> GetUserSessuionById(Guid sessionId, CancellationToken ct);    
     Task<IReadOnlyList<SessionResponse>> GetUserSessionsByIdAsync(Guid userId, CancellationToken ct);
     Task<UserSession?> GetUserSessionsByTokenAsync(string tokenHashed, CancellationToken ct);
     Task AddUserSessionAsync(UserSession userSession, CancellationToken ct);

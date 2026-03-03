@@ -1,5 +1,6 @@
 using Application.Contracts.Session;
 using Application.Interfaces;
+using Application.Interfaces.CacheInterfaces;
 using DeviceDetectorNET;
 using Domain.Entities;
 using Domain.Exceptions;
@@ -11,14 +12,15 @@ namespace Application.Services;
 public class UserSessionService : IUserSessionService
 {
     private readonly IUserSessionRepository _userSessionRepository;
-    private readonly ITokenHasher  _tokenHasher;
-    private readonly ICacheService _cacheService;
+    private readonly ITokenHasher _tokenHasher;
+    private readonly ISessionCache _sessionCache;
 
-    public UserSessionService(IUserSessionRepository userSessionRepository, ITokenHasher tokenHasher, ICacheService cacheService)
+    public UserSessionService(IUserSessionRepository userSessionRepository, ITokenHasher tokenHasher,
+        ISessionCache sessionCache)
     {
         _userSessionRepository = userSessionRepository;
         _tokenHasher = tokenHasher;
-        _cacheService = cacheService;
+        _sessionCache = sessionCache;
     }
 
     private string GetUserAgentConvertedInfo(string userAgent)
@@ -45,10 +47,13 @@ public class UserSessionService : IUserSessionService
             DateTimeOffset.UtcNow);
     }
 
-    public async Task<IReadOnlyList<SessionResponse>> GetUserSessionsByIdAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<SessionResponse>> GetUserSessionsByIdAsync(Guid userId,
+        CancellationToken ct = default)
     {
         var sessions = await _userSessionRepository.GetUserSessionsByUserIdAsync(userId, ct);
-        return sessions.Select(s => new SessionResponse(s.DeviceId, s.DisplayName, s.CreatedAt, s.LastUsedAt, s.RefreshToken.IsExpired)).ToList();
+        return sessions.Select(s =>
+                new SessionResponse(s.DeviceId, s.DisplayName, s.CreatedAt, s.LastUsedAt, s.RefreshToken.IsExpired))
+            .ToList();
     }
 
     public async Task<UserSession?> GetUserSessionsByTokenAsync(string tokenHashed, CancellationToken ct)
@@ -80,10 +85,10 @@ public class UserSessionService : IUserSessionService
 
     public async Task<UserSession?> RemoveSessionAsync(string? hashedToken, string deviceId, CancellationToken ct)
     {
-        var session = hashedToken is null 
-            ? await _userSessionRepository.GetUserSessionByDeviceIdAsync(deviceId, ct) 
-            :  await _userSessionRepository.GetUserSessionByTokenAsync(hashedToken, ct);
-        
+        var session = hashedToken is null
+            ? await _userSessionRepository.GetUserSessionByDeviceIdAsync(deviceId, ct)
+            : await _userSessionRepository.GetUserSessionByTokenAsync(hashedToken, ct);
+
         if (session != null) await _userSessionRepository.RemoveUserSessionAsync(session, ct);
         await _userSessionRepository.SaveChangesAsync(ct);
         return session;
@@ -94,28 +99,34 @@ public class UserSessionService : IUserSessionService
         var sessions = await _userSessionRepository.GetUserSessionsByUserIdAsync(userId, ct);
         foreach (var session in sessions)
         {
-            if (currentToken != null && 
+            if (currentToken != null &&
                 _tokenHasher.VerifyToken(currentToken, session.RefreshToken.TokenHashed))
                 continue;
 
             await _userSessionRepository.RemoveUserSessionAsync(session, ct);
-            await _cacheService.RemoveAsync($"session:{session.Id}");
+            await _sessionCache.RemoveSessionAsync(session.Id);
         }
+
         await _userSessionRepository.SaveChangesAsync(ct);
     }
 
-    public async Task TerminateSessionAsync(Guid userId, string? currentRefreshToken, string deviceId, CancellationToken ct)
+    public async Task TerminateSessionAsync(Guid userId, string? currentRefreshToken, string deviceId,
+        CancellationToken ct)
     {
-        
         var session = await _userSessionRepository.GetUserSessionByDeviceIdAsync(deviceId, ct);
         if (session == null || session.UserId != userId) throw new NotFoundException();
-        
-        if (currentRefreshToken != null && 
+
+        if (currentRefreshToken != null &&
             _tokenHasher.VerifyToken(currentRefreshToken, session.RefreshToken.TokenHashed))
             throw new InvalidOperationException("Cannot terminate session");
 
         await _userSessionRepository.RemoveUserSessionAsync(session, ct);
         await _userSessionRepository.SaveChangesAsync(ct);
-        await _cacheService.RemoveAsync($"session:{session.Id}");
+        await _sessionCache.RemoveSessionAsync(session.Id);
+    }
+
+    public async Task<UserSession?> GetUserSessuionById(Guid sessionId, CancellationToken ct)
+    {
+        return await _userSessionRepository.GetUserSessionByIdAsync(sessionId, ct);
     }
 }

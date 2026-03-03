@@ -51,9 +51,9 @@ public class MyAppDbContext : DbContext
 
         modelBuilder.Entity<UserRelation>(relation =>
         {
-            relation.HasKey(x => new { x.UserId, x.TargetUserId, x.RelationType });
+            relation.HasKey(x => new { x.UserId, x.TargetUserId, RelationType = x.ERelationType });
 
-            relation.Property(x => x.RelationType)
+            relation.Property(x => x.ERelationType)
                 .HasConversion<string>()
                 .HasMaxLength(32)
                 .IsRequired();
@@ -74,7 +74,7 @@ public class MyAppDbContext : DbContext
 
             relation.HasIndex(x => x.UserId);
             relation.HasIndex(x => x.TargetUserId);
-            relation.HasIndex(x => new { x.UserId, x.RelationType, x.Status });
+            relation.HasIndex(x => new { x.UserId, RelationType = x.ERelationType, x.Status });
         });
 
         base.OnModelCreating(modelBuilder);

@@ -7,8 +7,8 @@ public sealed record UserRelation : TimeTracking
     public Guid UserId { get; private set; }
     public Guid TargetUserId { get; private set; }
 
-    public RelationTypeEnum RelationType { get; set; }
-    public RelationStatus? Status { get; set; }
+    public ERelationType ERelationType { get; set; }
+    public ERelationStatus? Status { get; set; }
 
     public User User { get; private set; } = null!;
     public User TargetUser { get; private set; } = null!;
@@ -16,8 +16,8 @@ public sealed record UserRelation : TimeTracking
     public UserRelation(
         Guid userId,
         Guid targetUserId,
-        RelationTypeEnum relationType,
-        RelationStatus? status = null
+        ERelationType eRelationType,
+        ERelationStatus? status = null
     )
     {
         if (userId == targetUserId)
@@ -25,23 +25,23 @@ public sealed record UserRelation : TimeTracking
 
         UserId = userId;
         TargetUserId = targetUserId;
-        RelationType = relationType;
+        ERelationType = eRelationType;
         Status = status;
     }
 
     public void Accept()
     {
-        if (RelationType != RelationTypeEnum.Friend || Status != RelationStatus.Pending)
+        if (ERelationType != ERelationType.Friend || Status != ERelationStatus.Pending)
             throw new InvalidOperationException("Relation cannot be accepted");
 
-        Status = RelationStatus.Accepted;
+        Status = ERelationStatus.Accepted;
     }
 
     public void Reject()
     {
-        if (RelationType != RelationTypeEnum.Friend || Status != RelationStatus.Pending)
+        if (ERelationType != ERelationType.Friend || Status != ERelationStatus.Pending)
             throw new InvalidOperationException("Relation cannot be rejected");
 
-        Status = RelationStatus.Rejected;
+        Status = ERelationStatus.Rejected;
     }
 }

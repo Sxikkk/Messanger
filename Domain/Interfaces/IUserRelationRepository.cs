@@ -8,27 +8,27 @@ public interface IUserRelationRepository
     Task<UserRelation?> GetAsync(
         Guid userId,
         Guid targetUserId,
-        RelationTypeEnum relationType,
+        ERelationType eRelationType,
         CancellationToken ct
     );
 
     Task<IReadOnlyList<UserRelation>> GetOutgoingAsync(
         Guid userId,
-        RelationTypeEnum relationType,
+        ERelationType eRelationType,
         CancellationToken ct
     );
 
     Task<IReadOnlyList<UserRelation>> GetIncomingAsync(
         Guid targetUserId,
-        RelationTypeEnum relationType,
-        RelationStatus? status,
+        ERelationType eRelationType,
+        ERelationStatus? status,
         CancellationToken ct
     );
 
     Task<bool> ExistsAsync(
         Guid userId,
         Guid targetUserId,
-        RelationTypeEnum relationType,
+        ERelationType eRelationType,
         CancellationToken ct
     );
 
@@ -38,7 +38,7 @@ public interface IUserRelationRepository
     Task RemoveRangeAsync(
         Guid userId,
         Guid targetUserId,
-        RelationTypeEnum relationType,
+        ERelationType eRelationType,
         CancellationToken ct
     );
 

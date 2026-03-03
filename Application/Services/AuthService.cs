@@ -1,10 +1,12 @@
 ﻿using System.Security.Claims;
 using Application.Contracts.Auth;
 using Application.Interfaces;
+using Application.Interfaces.CacheInterfaces;
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.Interfaces;
 using Domain.ValueObjects;
+using Microsoft.Extensions.Options;
 
 namespace Application.Services;
 
@@ -16,18 +18,18 @@ public class AuthService : IAuthService
     private readonly ITokenHasher _tokenHasher;
     private readonly IEmailService _emailService;
     private readonly IUserSessionService _userSessionService;
-    private readonly ICacheService _cacheService;
-    
-    private readonly int _expireRefreshDays;
-    private readonly int _expireAccessMinutes;
+    private readonly ISessionCache _sessionCache;
+    private readonly IOptions<JwtSettings> _options;
     public AuthService(
         IUserRepository userRepository,
         IJwtService jwtService,
         IPasswordHasher passwordHasher,
         ITokenHasher tokenHasher,
         IEmailService emailService,
-        IUserSessionService userSessionService, 
-        IConfiguration configuration, ICacheService cacheService)
+        IUserSessionService userSessionService,
+        ISessionCache sessionCache, 
+        IOptions<JwtSettings> options
+        )
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
@@ -35,9 +37,8 @@ public class AuthService : IAuthService
         _tokenHasher = tokenHasher;
         _emailService = emailService;
         _userSessionService = userSessionService;
-        _cacheService = cacheService;
-        _expireRefreshDays = configuration.GetSection("Jwt").GetValue<int>("RefreshTokenExpiryDays");
-        _expireAccessMinutes = configuration.GetSection("Jwt").GetValue<int>("AccessTokenExpiryMinutes");
+        _sessionCache = sessionCache;
+        _options = options;
     }
 
     public async Task<AuthResponse?> CreateUserAsync(RegisterRequest request, string userAgent, string deviceId,
@@ -84,18 +85,18 @@ public class AuthService : IAuthService
         var session = _userSessionService.CreateUserSession(user, deviceId, userAgent, new RefreshToken
         {
             TokenHashed = _tokenHasher.HashToken(refreshToken),
-            ExpiresAt = DateTimeOffset.UtcNow.AddDays(_expireRefreshDays)
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(_options.Value.RefreshTokenExpiryDays)
         });
 
         await _userSessionService.AddUserSessionAsync(session, cancellationToken);
 
-        await _cacheService.SetAsync($"session:{session.Id}", new { User = user.Username, CreatedAt = session.CreatedAt }, TimeSpan.FromMinutes(_expireAccessMinutes));
-        
+        await _sessionCache.SetSessionAsync(session.Id);
+
         return new AuthResponse
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            SessionId =  session.Id.ToString(),
+            SessionId = session.Id.ToString(),
         };
     }
 
@@ -122,18 +123,18 @@ public class AuthService : IAuthService
         var session = _userSessionService.CreateUserSession(user, deviceId, userAgent, new RefreshToken
         {
             TokenHashed = _tokenHasher.HashToken(refreshToken),
-            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7)
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(_options.Value.RefreshTokenExpiryDays)
         });
 
         await _userSessionService.AddUserSessionAsync(session, cancellationToken);
-       
-        await _cacheService.SetAsync($"session:{session.Id}", new { User = user.Username, CreatedAt = session.CreatedAt }, TimeSpan.FromMinutes(_expireAccessMinutes));
+
+        await _sessionCache.SetSessionAsync(session.Id);
 
         return new AuthResponse
         {
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            SessionId =  session.Id.ToString(),
+            SessionId = session.Id.ToString(),
         };
     }
 
@@ -145,25 +146,25 @@ public class AuthService : IAuthService
         var session = await _userSessionService.GetUserSessionsByTokenAsync(hashedToken, cancellationToken);
 
         ArgumentNullException.ThrowIfNull(session);
-        
+
         var user = await _userRepository.GetUserByIdAsync(session.UserId, cancellationToken);
 
         ArgumentNullException.ThrowIfNull(user);
-        
+
         var accessToken = _jwtService.GenerateAccessToken(GetClaims(user));
         var newRefreshToken = _jwtService.GenerateRefreshToken();
 
-        
-        await _userSessionService.UpdateSessionTokenAsync(session, _tokenHasher.HashToken(newRefreshToken),
-            DateTimeOffset.UtcNow.AddDays(_expireRefreshDays), cancellationToken);
 
-        await _cacheService.SetAsync($"session:{session.Id}", new { User = user.Username, CreatedAt = session.CreatedAt }, TimeSpan.FromMinutes(_expireAccessMinutes));
-        
+        await _userSessionService.UpdateSessionTokenAsync(session, _tokenHasher.HashToken(newRefreshToken),
+            DateTimeOffset.UtcNow.AddDays(_options.Value.RefreshTokenExpiryDays), cancellationToken);
+
+        await _sessionCache.SetSessionAsync(session.Id);
+
         return new AuthResponse
         {
             AccessToken = accessToken,
             RefreshToken = newRefreshToken,
-            SessionId =  session.Id.ToString(),
+            SessionId = session.Id.ToString(),
         };
     }
 
@@ -217,8 +218,9 @@ public class AuthService : IAuthService
     public async Task LogoutUserAsync(string token, string deviceId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(token);
-        var session = await _userSessionService.RemoveSessionAsync(_tokenHasher.HashToken(token), deviceId, cancellationToken);
-        if (session != null) await _cacheService.RemoveAsync($"session:{session.Id}");
+        var session =
+            await _userSessionService.RemoveSessionAsync(_tokenHasher.HashToken(token), deviceId, cancellationToken);
+        if (session != null) await _sessionCache.RemoveSessionAsync(session.Id);
     }
 
     private static IEnumerable<Claim> GetClaims(User user)

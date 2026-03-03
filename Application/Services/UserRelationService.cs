@@ -22,14 +22,14 @@ public class UserRelationService : IUserRelationService
         
         await EnsureNotBlockedAsync(currentUserId, targetUserId, ct);
 
-        if (await _userRelationRepository.ExistsAsync(currentUserId, targetUserId, RelationTypeEnum.Friend, ct))
+        if (await _userRelationRepository.ExistsAsync(currentUserId, targetUserId, ERelationType.Friend, ct))
             throw new InvalidOperationException("Friend request already exists");
 
         var relation = new UserRelation(
             currentUserId,
             targetUserId,
-            RelationTypeEnum.Friend,
-            RelationStatus.Pending
+            ERelationType.Friend,
+            ERelationStatus.Pending
         );
 
         await _userRelationRepository.AddAsync(relation, ct);
@@ -42,11 +42,11 @@ public class UserRelationService : IUserRelationService
         var incoming = await _userRelationRepository.GetAsync(
             requestUserId,
             currentUserId,
-            RelationTypeEnum.Friend,
+            ERelationType.Friend,
             ct
         );
 
-        if (incoming is null || incoming.Status != RelationStatus.Pending)
+        if (incoming is null || incoming.Status != ERelationStatus.Pending)
             throw new InvalidOperationException("No pending request");
 
         incoming.Accept();
@@ -54,8 +54,8 @@ public class UserRelationService : IUserRelationService
         var reverse = new UserRelation(
             currentUserId,
             requestUserId,
-            RelationTypeEnum.Friend,
-            RelationStatus.Accepted
+            ERelationType.Friend,
+            ERelationStatus.Accepted
         );
 
         await _userRelationRepository.AddAsync(reverse, ct);
@@ -69,11 +69,11 @@ public class UserRelationService : IUserRelationService
         var incoming = await _userRelationRepository.GetAsync(
             requestUserId,
             currentUserId,
-            RelationTypeEnum.Friend,
+            ERelationType.Friend,
             ct
         );
 
-        if (incoming is null || incoming.Status != RelationStatus.Pending)
+        if (incoming is null || incoming.Status != ERelationStatus.Pending)
             throw new InvalidOperationException("No pending request");
 
         incoming.Reject();
@@ -85,8 +85,8 @@ public class UserRelationService : IUserRelationService
     {
         var targetUserId =  await _userRepository.GetUserIdByUsernameAsync(targetUsername, ct);
        
-        await _userRelationRepository.RemoveRangeAsync(currentUserId, targetUserId, RelationTypeEnum.Friend, ct);
-        await _userRelationRepository.RemoveRangeAsync(targetUserId, currentUserId, RelationTypeEnum.Friend, ct);
+        await _userRelationRepository.RemoveRangeAsync(currentUserId, targetUserId, ERelationType.Friend, ct);
+        await _userRelationRepository.RemoveRangeAsync(targetUserId, currentUserId, ERelationType.Friend, ct);
 
         await _userRelationRepository.SaveChangesAsync(ct);
     }
@@ -100,7 +100,7 @@ public class UserRelationService : IUserRelationService
         var block = new UserRelation(
             currentUserId,
             targetUserId,
-            RelationTypeEnum.Block
+            ERelationType.Block
         );
 
         await _userRelationRepository.AddAsync(block, ct);
@@ -114,7 +114,7 @@ public class UserRelationService : IUserRelationService
         await _userRelationRepository.RemoveRangeAsync(
             currentUserId,
             targetUserId,
-            RelationTypeEnum.Block,
+            ERelationType.Block,
             ct
         );
 
@@ -123,10 +123,10 @@ public class UserRelationService : IUserRelationService
 
     public async Task<IReadOnlyList<string>> GetFriendsAsync(Guid currentUserId, CancellationToken ct)
     {
-        var relations = await _userRelationRepository.GetOutgoingAsync(currentUserId, RelationTypeEnum.Friend, ct);
+        var relations = await _userRelationRepository.GetOutgoingAsync(currentUserId, ERelationType.Friend, ct);
 
         var friendsIds = relations
-            .Where(r => r.Status == RelationStatus.Accepted)
+            .Where(r => r.Status == ERelationStatus.Accepted)
             .Select(r => r.TargetUserId)
             .ToList();
 
@@ -142,8 +142,8 @@ public class UserRelationService : IUserRelationService
     {
         var relations = await _userRelationRepository.GetIncomingAsync(
             currentUserId, 
-            RelationTypeEnum.Friend, 
-            RelationStatus.Pending, 
+            ERelationType.Friend, 
+            ERelationStatus.Pending, 
             ct
         );
 
@@ -166,8 +166,8 @@ public class UserRelationService : IUserRelationService
         CancellationToken ct
     )
     {
-        if (await _userRelationRepository.ExistsAsync(userId, targetUserId, RelationTypeEnum.Block, ct) ||
-            await _userRelationRepository.ExistsAsync(targetUserId, userId, RelationTypeEnum.Block, ct))
+        if (await _userRelationRepository.ExistsAsync(userId, targetUserId, ERelationType.Block, ct) ||
+            await _userRelationRepository.ExistsAsync(targetUserId, userId, ERelationType.Block, ct))
         {
             throw new InvalidOperationException("User is blocked");
         }
